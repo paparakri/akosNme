@@ -5,6 +5,9 @@ const {logger} = require('./middleware/logger');
 const errorHandler = require('./middleware/errorHandler');
 const PORT = process.env.PORT || 3500;
 
+//Load environment variables
+require('dotenv').config();
+
 //Mongoose Initialization
 require('./config/mongoose')().catch(err => console.log(err));
 

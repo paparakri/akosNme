@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 async function mongoInit() {
-    const uri = 'mongodb+srv://papakri:Paparakri13!@cluster0.uw0zdqq.mongodb.net/PlinkoDB?retryWrites=true&w=majority';
+    const uri = process.env.MONGO_URL;
+
     await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,

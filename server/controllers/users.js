@@ -2,6 +2,8 @@ const ClubUser = require("../models/clubUser.js");
 const NormalUser = require("../models/normalUser.js");
 const ServiceProviderUser = require("../models/serviceProviderUser.js");
 const jwt = require('jsonwebtoken');
+const helper = require('./../helpers/userObject.js');
+const bcrypt = require('bcrypt');
 
 /* READ */
 const getNormalUser = async (req, res) => {
@@ -9,8 +11,10 @@ const getNormalUser = async (req, res) => {
         const { id } = req.params;
         const normalUser = await NormalUser.findOne({username: id});
         if(normalUser==null) throw new Error("User not found.");
-        res.status(200).json(normalUser);
+
+        res.status(200).json(helper(normalUser));
     } catch(err){
+        console.log(err);
         require('./../config/404.js')(req, res);
     }
 };
@@ -139,12 +143,22 @@ const createNormalUser = async (req, res) => {
         // Retrieve the user data from the request body
         const userData = req.body;
 
+        const salt = await bcrypt.genSalt(10);
+        const uniqueSalt = `${salt}${req.body.username}`;
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(userData.password, uniqueSalt);
+        userData.password = hashedPassword;
+
         // Create a new normal user in the database
         const newUser = await NormalUser.create(userData);
 
+        //const token = jwt.sign({ username: newUser.username }, process.env.JWT_SECRET, { expiresIn: 60 * 60 * 24 });
+
         // Return the newly created user as a JSON response
-        res.status(201).json(newUser);
+        res.status(201).json({token: token, user: newUser});
     } catch (error) {
+        console.log(error);
         const errors = userCreationErrorHandling(error);
         const errorValues = Object.values(errors);
         const filteredErrors = errorValues.filter((error) => error !== "");
