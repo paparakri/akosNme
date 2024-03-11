@@ -1,58 +1,56 @@
-import jsonwebtoken from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import NormalUser from "../models/normalUser.js";
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const NormalUser = require('../models/normalUser.js');
 
 /* REGISTERING NORMAL USER*/
-export const register = async (req, res) => {
-    try{
-        const {
-            username,
-            firstName,
-            lastName,
-            email,
-            password,
-            picturePath,
-            serviceProviderInterests,
-            clubInterests,
-            yourReviews
-        } = req.body;
+const register = async (req, res) => {
+    try {
+        // Retrieve the user data from the request body
+        const userData = req.body;
 
-        const salt = await bcrypt.genSalt();
-        const passHash = await bcrypt.hash(password, salt);
+        // Create unique salt for the user
+        const salt = await bcrypt.genSalt(10);
+        const uniqueSalt = `${salt}${req.body.username}`;
 
-        const newNormalUser = new NormalUser({
-            username,
-            firstName,
-            lastName,
-            email,
-            passHash,
-            picturePath,
-            serviceProviderInterests,
-            clubInterests,
-            yourReviews
-        });
-        const savedNormalUser = await newNormalUser.save();
-        res.status(201).json(savedNormalUser);
-    } catch(err){
-        res.status(500).json({ error: err.message });
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(userData.password, uniqueSalt);
+        userData.password = hashedPassword;
+
+        // Create a new normal user in the database
+        const newUser = await NormalUser.create(userData);
+
+        // Return the newly created user as a JSON response
+        res.status(201).json({token: token, user: newUser});
+    } catch (error) {
+        console.log(error);
+        // Handle any errors that occur during the creation process
+        res.status(500).json({ error: error.message });
     }
 }
 
 /* LOGGING IN FOR NORMAL USER*/ /* THIS IS NOT SECURE. DIFFERENT AUTHENTICATION NEEDED. POSSIBLY FROM THIRD-PARTY. */
-export const login = async (req, res) => {
+const login = async (req, res) => {
     try{
         const { email, password } = req.body;
         const normalUser = await NormalUser.findOne({ email: email });
         if(!normalUser) return res.status(400).json ({ msg: "No user associated with that e-mail." });
 
-        const isMatch = await bcrypt.compare(password, normalUser.passHash);
+        const isMatch = await bcrypt.compare(password, normalUser.password);
         if(!isMatch) return res.status(400).json({ msg: "Wrong password." });
 
-        const token = jwt.sign({ id: normalUser._id }, process.env.JWT_SECRET);
-        delete normalUser.password;
-        res.status(200).json({ token, normalUser });
+        //Create JWTs
+        const accessToken = jwt.sign({username: normalUser.username}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "60s" });
+        const refreshToken = jwt.sign({username: normalUser.username}, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "1d" });
+
+        //Add the refresh token to the user
+        normalUser.refreshToken = refreshToken;
+        await normalUser.save();
+
+        res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        res.status(200).json({ "accessToken": accessToken, "user": normalUser });
     }catch(err){
         res.status(500).json({ error: err.message });
     }
 }
+
+module.exports = { register, login };

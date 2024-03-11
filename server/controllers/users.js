@@ -1,18 +1,18 @@
 const ClubUser = require("../models/clubUser.js");
 const NormalUser = require("../models/normalUser.js");
 const ServiceProviderUser = require("../models/serviceProviderUser.js");
-const jwt = require('jsonwebtoken');
 const helper = require('./../helpers/userObject.js');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-/* READ */
+/* GET */
 const getNormalUser = async (req, res) => {
     try{
         const { id } = req.params;
         const normalUser = await NormalUser.findOne({username: id});
         if(normalUser==null) throw new Error("User not found.");
 
-        res.status(200).json(helper(normalUser));
+        res.status(200).json(normalUser);
     } catch(err){
         console.log(err);
         require('./../config/404.js')(req, res);
@@ -117,6 +117,7 @@ const addRemoveInterest = async (req, res) => {
     }
 };
 
+/* ERROR HANDLING FOR USER CREATION (WILL REMOVE WHEN I CREATE THE AUTH ROUTES) */
 const userCreationErrorHandling = (err) => {
     let errors = { username: '', firstName: '', lastName: '', email: '', password: '' };
 
@@ -170,7 +171,11 @@ const createNormalUser = async (req, res) => {
 /* UPDATE */
 const updateNormalUser = async (req,res) => {
     try{
-        const normalUser = await NormalUser.findOneAndUpdate({username: req.params.id}, req.body, {new: true});
+        let data = req.body;
+        const salt = await bcrypt.genSalt(10);
+        const uniqueSalt = `${salt}${req.body.username}`;
+        data.password = await bcrypt.hash(req.body.password, uniqueSalt);
+        const normalUser = await NormalUser.findOneAndUpdate({username: req.params.id}, data, {new: true});
         if(normalUser==null) throw new Error("User not found.");
 
         res.status(200).json(normalUser);

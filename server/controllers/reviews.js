@@ -3,6 +3,7 @@ const NormalUser = require("../models/normalUser.js");
 const ServiceProviderUser = require("../models/serviceProviderUser.js");
 const Review = require("../models/review.js");
 
+//POST
 const addRemoveReview = async (req, res) => {
     try{
         const id = req.params.id;
@@ -52,20 +53,65 @@ const addRemoveReview = async (req, res) => {
     }
 };
 
+//GET
 const getReviews = async (req, res) => {
     try{
         const username = req.params.id;
         const normalUser = await NormalUser.findOne({username: username});
 
-        const reviews = await Promise.all(
+        let reviews = await Promise.all(
             normalUser.yourReviews.map((id) => Review.findById(id))
         );
 
-        console.log(reviews);
+        reviews = await Promise.all(reviews.map(async (review) => {
+            const reviewer = await NormalUser.findById(review.reviewer);
+            const revieweye = await ClubUser.findById(review.revieweye);
+            return {
+                ...review._doc,
+                reviewer: reviewer ? reviewer.username : null,
+                revieweye: revieweye ? revieweye.displayName : null
+            };
+        }));
 
+        res.status(200).json(reviews);
     } catch(err){
         res.status(400).json( { error: err.message });
     }
 }
 
-module.exports = { addRemoveReview, getReviews };
+//PUT
+const updateReview = async (req, res) => {
+    try{
+        const username = req.params.id;
+        const { reviewId, rating, reviewText } = req.body;
+        const normalUser = await NormalUser.findOne({ username: username });
+        const review = await Review.findByIdAndUpdate(reviewId, { rating, reviewText });
+
+        res.status(200).json({message: "Review updated."});
+    } catch(err){
+        res.status(400).json( { error: err.message });
+    }
+};
+
+//DELETE
+const deleteReview = async (req, res) => {
+    try{
+        const username = req.params.id;
+        const { reviewId } = req.body;
+        const normalUser = await NormalUser.findOne({ username: username });
+        const review = await Review.findById(reviewId);
+        const revieweye = await ClubUser.findById(review.revieweye);
+        if (review.reviewer != normalUser._id){
+            throw new Error("You can only delete your own reviews.");
+        }
+        await Review.findByIdAndDelete(reviewId);
+        normalUser.yourReviews = normalUser.yourReviews.filter((id) => id != reviewId);
+        revieweye.reviews = revieweye.reviews.filter((id) => id != reviewId);
+        await normalUser.save();
+        res.status(200).json({message: "Review deleted."});
+    } catch(err){
+        res.status(400).json( { error: err.message });
+    }
+};
+
+module.exports = { addRemoveReview, getReviews, updateReview, deleteReview };

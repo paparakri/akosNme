@@ -1,18 +1,19 @@
 //AUTHORIZATION (GIVING CERTAIN SERVICES)
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
-import jwt from "jsonwebtoken";
+const verifyToken = async (req, res, next) => {
+    const auth = req.headers["authorization"];
+    if(!auth) return res.sendStatus(401);
 
-export const verifyToken = async (req, res, next) => {
-    try {
-        let token = req.header("Authorizations");
+    const token = auth.split(" ")[1];
+    if(!token) return res.sendStatus(401);
 
-        if (!token) return res.status(403).send("Access Denied");
-        if (token.startsWith("Bearer ")) token = token.slice(7, token.length).trimLeft();
-
-        const verified = jwt.verify(token, process.env.JWT_SECRET);
-        req.normalUser = verified;
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if(err) return res.sendStatus(403);
+        req.user = decoded.username;
         next();
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    });
 }
+
+module.exports = verifyToken;

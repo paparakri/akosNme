@@ -38,8 +38,7 @@ def collaborative_filtering(df_reviews):
         return {}
 
 def get_mongo_data():
-    PlinkoDB = MongoClient(mongo_uri, tlsCAFile=ca)['PlinkoDB']
-    print("Connected to MongoDB")
+    
     reviews = PlinkoDB['reviews']
     clubs = PlinkoDB['clubusers']
     normalUsers = PlinkoDB['normalusers']
@@ -53,6 +52,7 @@ def get_mongo_data():
 ca = certifi.where()
 load_dotenv()
 mongo_uri = uri = "mongodb+srv://papakri:Paparakri13!@cluster0.uw0zdqq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+PlinkoDB = MongoClient(mongo_uri, tlsCAFile=ca)['PlinkoDB']
 
 app = Flask(__name__)
 

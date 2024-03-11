@@ -38,6 +38,10 @@ const NormalUserSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
+        refreshToken: {
+            type: String,
+            default: ""
+        },
         serviceProviderInterests: {
             type: Array,
             default: []
