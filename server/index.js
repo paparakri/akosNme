@@ -33,17 +33,17 @@ app.use(cookieParser());
 //Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/user', express.static(path.join(__dirname, 'public')));
+app.use('/club', express.static(path.join(__dirname, 'public')));
+app.use('/provider', express.static(path.join(__dirname, 'public')));
 
 //routers
 app.use('/', require('./routes/root.js'));
 app.use('/refresh', require('./routes/refresh.js'));
+app.use('/logout', require('./routes/logout.js'));
 
-//middleware to verify token
-app.use(verifyToken);
-
-app.use('/user', require('./routes/user.js'));
-app.use('/club', require('./routes/club.js'));
-app.use('/provider', require('./routes/provider.js'));
+app.use('/user', verifyToken, require('./routes/user.js'));
+app.use('/club', verifyToken, require('./routes/club.js'));
+app.use('/provider', verifyToken, require('./routes/provider.js'));
 
 app.all('*', require('./config/404'));
 
