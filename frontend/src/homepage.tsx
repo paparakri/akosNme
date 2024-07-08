@@ -8,11 +8,11 @@ import {
   Box,
   Button,
   useBreakpointValue,
-  extendTheme,
-  Flex
+  extendTheme
 } from '@chakra-ui/react'
-import LargeWithAppLinksAndSocial from './footer.tsx'
-import WithSubnavigation from './navbar.tsx'
+import LargeWithAppLinksAndSocial from './components/footer.tsx'
+import WithSubnavigation from './components/navbar.tsx'
+import SearchBar from './components/searchBar.tsx'
 import BarCard from './components/barCard.tsx'
 import demoPic from './assets/demoPic.jpg'
 
@@ -70,6 +70,7 @@ export default function CallToActionWithIllustration() {
       {/* SimpleGrid taking up the whole screen */}
       <Box bg="#edf3f8" _dark={{ bg: "#3e3e3e" }} width="95%" mx="auto" borderRadius={30}>
       <Box width="80%" mx="auto" textAlign="center">
+      <SearchBar/>
         <SimpleGrid columns={columns} spacing={0}>
           <BarCard
             imageAlt="Rock N Roll Club"

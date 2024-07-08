@@ -1,5 +1,5 @@
 import React from "react";
-import {  Box, Flex, chakra, Image, Badge, Text } from '@chakra-ui/react'
+import {  Box, Flex, Image, Badge, Text } from '@chakra-ui/react'
 import { BsStar, BsStarFill, BsStarHalf } from 'react-icons/bs';
 import { StarIcon } from "@chakra-ui/icons";
 
@@ -120,7 +120,7 @@ const BarCard: React.FC<BarCardProps> = ({imageUrl, imageAlt, title, description
                   />
                 ))}
               <Box as="span" ml="2" color="gray.600" fontSize="sm">
-                {reviewCount} reviews
+                ({reviewCount})
               </Box>
             </Box>
           </Box>
