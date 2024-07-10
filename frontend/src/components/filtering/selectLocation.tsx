@@ -2,7 +2,7 @@ import {Spinner} from '@chakra-ui/react';
 import {useState, useEffect} from 'react';
 import {APIProvider, Map} from "@vis.gl/react-google-maps";
 
-import {Circle} from './circle';
+import {Circle} from './circle.tsx';
 
 
 const useGeolocation = () => {

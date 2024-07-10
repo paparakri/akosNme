@@ -12,7 +12,7 @@ import {
     Icon,
     Divider
   } from '@chakra-ui/react'
-import FilterWindow from './filterWindow';
+import FilterWindow from './filterWindow.tsx';
 import { SmallCloseIcon } from '@chakra-ui/icons';
 
 function Filter() {

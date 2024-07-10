@@ -11,9 +11,10 @@ import {
     Tabs,
     RangeSliderThumb,
     TabList,
+    Modal, ModalOverlay, ModalContent, Modal
   } from '@chakra-ui/react'
 
-import FloatingInput from './floatingTextInput';
+import FloatingInput from './floatingTextInput.tsx';
 import { useState } from 'react';
 
 const FilterWindow = () => {
