@@ -8,7 +8,6 @@ import {
     RangeSlider,
     RangeSliderTrack,
     RangeSliderFilledTrack,
-    Input,
     Tabs,
     RangeSliderThumb,
     TabList,
@@ -23,7 +22,7 @@ const FilterWindow = () => {
     const [max, setMax] = useState(120);
 
     return (
-    <Stack width="725px" height="1082px" maxWidth="100%" background="#E9E9E9" padding={10}>
+    <Stack width="725px" height="1082px" maxWidth="100%" background={"#E9E9E9"} padding={10}>
       <Box>
         <Text
           fontFamily="Inter"
@@ -83,7 +82,7 @@ const FilterWindow = () => {
         onChange={(val) => {setMin(val[0]*4); setMax(val[1]*4);}}
         >
           <RangeSliderThumb index={0}/>
-          <RangeSliderTrack background="gray.200">
+          <RangeSliderTrack background={"gray.200"}>
             <RangeSliderFilledTrack />
           </RangeSliderTrack>
           <RangeSliderThumb index={1}/>
