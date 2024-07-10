@@ -11,7 +11,7 @@ import {
     Tabs,
     RangeSliderThumb,
     TabList,
-    Modal, ModalOverlay, ModalContent, Modal
+    Modal, ModalOverlay, ModalContent
   } from '@chakra-ui/react'
 
 import FloatingInput from './floatingTextInput.tsx';
