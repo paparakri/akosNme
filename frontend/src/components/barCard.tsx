@@ -48,7 +48,6 @@ function Rating({ rating, numReviews }: RatingProps) {
 }
 
 const BarCard: React.FC<BarCardProps> = ({imageUrl, imageAlt, title, description, formattedPrice, reviewCount, rating, location}) => {
-    const tempURL = 'url(' + imageUrl + ')';
     return (
       <Flex
         bg="#edf3f8"
