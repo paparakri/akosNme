@@ -8,14 +8,15 @@ const addRemoveReview = async (req, res) => {
     try{
         const id = req.params.id;
         const { interestId, type, rating, reviewText } = req.body;    // I'm also adding a type variable here. So I know if it's a club or S.P.
-        const normalUser = await NormalUser.findOne({ username: id });
-        if(type == "Club"){
+        const normalUser = await NormalUser.findById(id);
+        if(type == "club"){
             //Get the club user
             const interestUser = await ClubUser.findById(interestId);
             
             //Check if the user has already reviewed the club
             if (await Review.findOne({ reviewer: normalUser._id, revieweye: interestUser._id })){
                 throw new Error("You have already reviewed this club.");
+                //NEED TO CREATE A FUNCTION TO DELETE THE REVIEW FROM THE REVIEW DB, THE CLUB USER & THE NORMAL USER IF THE REVIEW ALREADY EXISTS
             }
 
             //Create the review and add it to the review DB & reference it in the club user & the normal user
@@ -27,8 +28,15 @@ const addRemoveReview = async (req, res) => {
             interestUser.reviews.push(newReview._id);
             await interestUser.save();
 
+            //CALCULATE THE CLUB'S NEW RATING
+            const clubReviews = await Review.find({ revieweye: interestUser._id });
+            const totalRating = clubReviews.reduce((sum, review) => sum + review.rating, 0);
+            const newAvgRating = totalRating / clubReviews.length;
+            interestUser.rating = newAvgRating;
+            await interestUser.save();
+
             res.status(200).json({message: "Review added."});
-        } else if ("ServiceProvider"){
+        } else if (type == "serviceProvider"){
             //Get the club user
             const interestUser = await ServiceProviderUser.findById(interestId);
             
@@ -57,7 +65,7 @@ const addRemoveReview = async (req, res) => {
 const getReviews = async (req, res) => {
     try{
         const username = req.params.id;
-        const normalUser = await NormalUser.findOne({username: username});
+        const normalUser = await NormalUser.findById(username);
 
         let reviews = await Promise.all(
             normalUser.yourReviews.map((id) => Review.findById(id))
@@ -84,7 +92,7 @@ const updateReview = async (req, res) => {
     try{
         const username = req.params.id;
         const { reviewId, rating, reviewText } = req.body;
-        const normalUser = await NormalUser.findOne({ username: username });
+        const normalUser = await NormalUser.findById(username);
         const review = await Review.findByIdAndUpdate(reviewId, { rating, reviewText });
 
         res.status(200).json({message: "Review updated."});
@@ -98,7 +106,7 @@ const deleteReview = async (req, res) => {
     try{
         const username = req.params.id;
         const { reviewId } = req.body;
-        const normalUser = await NormalUser.findOne({ username: username });
+        const normalUser = await NormalUser.findById(username);
         const review = await Review.findById(reviewId);
         const revieweye = await ClubUser.findById(review.revieweye);
         if (review.reviewer != normalUser._id){

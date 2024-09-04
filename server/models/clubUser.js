@@ -36,6 +36,13 @@ const ClubUserSchema = new mongoose.Schema(
             min:3,
             max:70
         },
+        rating: {
+            type: Number,
+            required: true,
+            min: 0,
+            max: 5,
+            default: 0
+        },
         picturePath: {
             type: String,
             default: ""
@@ -60,7 +67,8 @@ const ClubUserSchema = new mongoose.Schema(
             type: Array,
             default: []
         }
-    }
+    },
+    {timestamps:true}
 );
 
 const ClubUser = mongoose.model("ClubUser", ClubUserSchema);

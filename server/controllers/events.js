@@ -7,8 +7,8 @@ const Event = require('./../models/event');
 //GET
 const getEvents = async (req, res) => {
     try{
-        const user = req.params.user.toLowerCase();
-        const clubUser = await ClubUser.findOne({username: user});
+        const user = req.params.user;
+        const clubUser = await ClubUser.findById(user);
         console.log(clubUser);
 
         let events = await Promise.all(
@@ -35,8 +35,8 @@ const postEvent = async (req, res) => {
     try{
         let data = req.body;
         data.organizer = clubUser._id;
-        const user = req.params.user.toLowerCase();
-        const clubUser = await ClubUser.findOne({username: user});
+        const user = req.params.user;
+        const clubUser = await ClubUser.findById(user);
 
         const newEvent = await Event.create(data);
 

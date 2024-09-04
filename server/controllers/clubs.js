@@ -1,11 +1,26 @@
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const ClubUser = require("../models/clubUser.js");
 const NormalUser = require("../models/normalUser.js");
 const ServiceProviderUser = require("../models/serviceProviderUser.js");
 
-const getClubUser = async (req, res) => {
+
+const getClubUserByName = async (req, res) => {
     try{
         const user = req.params.user.toLowerCase();
         const clubUser = await ClubUser.findOne({username: user});
+        if(clubUser==null) throw new Error("User not found.");
+        res.status(200).json(clubUser);
+    } catch(err){
+        console.log(err);
+        require('./../config/404.js')(req, res);
+    }
+};
+
+const getClubUser = async (req, res) => {
+    try{
+        const user = req.params.user;
+        const clubUser = await ClubUser.findById(user);
         if(clubUser==null) throw new Error("User not found.");
         res.status(200).json(clubUser);
     } catch(err){
@@ -18,8 +33,24 @@ const createClubUser = async (req, res) => {
     try{
         const data = req.body;
         data.username = data.username.toLowerCase();
+
+        const salt = await bcrypt.genSalt(10);
+        const uniqueSalt = `${salt}${data.username}`;
+
+        const hashedPassword = await bcrypt.hash(data.password, uniqueSalt);
+        data.password = hashedPassword;
+
+        const refreshToken = jwt.sign({
+            username: data.username
+        }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '10d'});
+
+        data.refreshToken = refreshToken;
+
         const clubUser = await ClubUser.create(data);
-        res.status(201).json(clubUser);
+
+        const token = jwt.sign({username: clubUser.username}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 60 * 60 * 24 })
+
+        res.status(201).json({token: token, user: clubUser, userType: 'club'});
     } catch(err){
         res.status(400).json( { error: err.message });
     }
@@ -27,9 +58,9 @@ const createClubUser = async (req, res) => {
 
 const addRemoveInterest = async (req, res) => {
     try{
-        const user = req.params.user.toLowerCase();
+        const user = req.params.user;
         const { interestId } = req.body; // I'm also adding a type variable here. So I know if it's a club or S.P.
-        const clubUser = await ClubUser.findOne({ username: user });
+        const clubUser = await ClubUser.findById(user);
         const interestUser = await ServiceProviderUser.findById(interestId);
 
         if(clubUser.serviceProviderInterests.includes(interestId)){
@@ -53,8 +84,8 @@ const addRemoveInterest = async (req, res) => {
 
 const getInterests = async (req, res) => {
     try{
-        const user = req.params.user.toLowerCase();
-        const clubUser = await ClubUser.findOne({username: user});
+        const user = req.params.user;
+        const clubUser = await ClubUser.findById(user);
         if(clubUser==null) throw new Error("User not found.");
         const interests = await Promise.all(
             clubUser.serviceProviderInterests.map((id) => ServiceProviderUser.findById(id))
@@ -71,8 +102,8 @@ const getInterests = async (req, res) => {
 
 const getFollowers = async (req, res) => {
     try{
-        const user = req.params.user.toLowerCase();
-        const clubUser = await ClubUser.findOne({username: user});
+        const user = req.params.user;
+        const clubUser = await ClubUser.findById(user);
         if(clubUser==null) throw new Error("User not found.");
         const followers = await Promise.all(
             clubUser.followers.map((id) => NormalUser.findById(id))
@@ -89,7 +120,7 @@ const getFollowers = async (req, res) => {
 
 const updateClubUser = async (req, res) => {
     try{
-        const clubUser = await ClubUser.findOneAndUpdate({username: req.params.user}, req.body, {new: true});
+        const clubUser = await ClubUser.findByIdAndUpdate(req.params.user, req.body, {new: true});
         if(clubUser==null) throw new Error("User not found.");
 
         res.status(200).json(clubUser);
@@ -100,7 +131,7 @@ const updateClubUser = async (req, res) => {
 
 const deleteClubUser = async (req, res) => {
     try{
-        const clubUser = await ClubUser.findOneAndDelete({username: req.params.user, email: req.body.email});
+        const clubUser = await ClubUser.findByIdAndDelete(req.params.user);
         if(clubUser==null) throw new Error("User not found.");
 
         res.status(200).json(clubUser);
@@ -109,4 +140,4 @@ const deleteClubUser = async (req, res) => {
     }
 };
 
-module.exports = { getClubUser, createClubUser, getFollowers, addRemoveInterest, getInterests, updateClubUser, deleteClubUser };
+module.exports = { getClubUser, getClubUserByName, createClubUser, getFollowers, addRemoveInterest, getInterests, updateClubUser, deleteClubUser };
