@@ -15,8 +15,8 @@ const createServiceProviderUser = async (req, res) => {
 
 const getServiceProviderUser = async (req, res) => {
     try{
-        const user = req.params.user.toLowerCase();
-        const providerUser = await ServiceProviderUser.findOne({username: user});
+        const user = req.params.user;
+        const providerUser = await ServiceProviderUser.findById(user);
         if(providerUser==null) throw new Error("User not found.");
         res.status(200).json(providerUser);
     } catch(err){

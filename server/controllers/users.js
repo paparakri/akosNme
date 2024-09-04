@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 const getNormalUser = async (req, res) => {
     try{
         const { id } = req.params;
-        const normalUser = await NormalUser.findOne({username: id});
+        const normalUser = await NormalUser.findById(id);
         if(normalUser==null) throw new Error("User not found.");
 
         res.status(200).json(normalUser);
@@ -22,7 +22,7 @@ const getNormalUser = async (req, res) => {
 const getNormalUserClubInterests = async (req, res) => {
     try{
         const user = req.params.id;
-        const normalUser = await NormalUser.findOne({username: user})
+        const normalUser = await NormalUser.findById(user)
 
         const clubInterests = await Promise.all(
             normalUser.clubInterests.map((id) => ClubUser.findById(id))
@@ -39,7 +39,7 @@ const getNormalUserClubInterests = async (req, res) => {
 const getNormalUserServiceProviderInterests = async (req, res) => {
     try{
         const user = req.params.id;
-        const normalUser = await NormalUser.findOne({username: user})
+        const normalUser = await NormalUser.findById(user);
 
         const serviceProviderInterests = await Promise.all(
             normalUser.serviceProviderInterests.map((id) => ServiceProviderUser.findById(id))
@@ -58,7 +58,7 @@ const addRemoveInterest = async (req, res) => {
     try{
         const id = req.params.id;
         const { interestId, type } = req.body;    // I'm also adding a type variable here. So I know if it's a club or S.P.
-        const normalUser = await NormalUser.findOne({ username: id });
+        const normalUser = await NormalUser.findById(id);
         if(type=="Club"){
             const interestUser = await ClubUser.findById(interestId);
 
@@ -145,19 +145,27 @@ const createNormalUser = async (req, res) => {
         const userData = req.body;
 
         const salt = await bcrypt.genSalt(10);
-        const uniqueSalt = `${salt}${req.body.username}`;
+        const uniqueSalt = `${salt}${userData.username}`;
 
+        console.log(userData)
         // Hash the password
         const hashedPassword = await bcrypt.hash(userData.password, uniqueSalt);
         userData.password = hashedPassword;
 
+        const refreshToken = jwt.sign({
+            username: userData.username
+        }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '10d'});
+
+        userData.refreshToken = refreshToken;
+
         // Create a new normal user in the database
         const newUser = await NormalUser.create(userData);
 
-        //const token = jwt.sign({ username: newUser.username }, process.env.JWT_SECRET, { expiresIn: 60 * 60 * 24 });
+        const token = jwt.sign({ username: newUser.username }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 60 * 60 * 24 });
 
         // Return the newly created user as a JSON response
-        res.status(201).json({token: token, user: newUser});
+
+        res.status(201).json({token: token, user: newUser, userType: 'normal'});
     } catch (error) {
         console.log(error);
         const errors = userCreationErrorHandling(error);
@@ -175,7 +183,7 @@ const updateNormalUser = async (req,res) => {
         const salt = await bcrypt.genSalt(10);
         const uniqueSalt = `${salt}${req.body.username}`;
         data.password = await bcrypt.hash(req.body.password, uniqueSalt);
-        const normalUser = await NormalUser.findOneAndUpdate({username: req.params.id}, data, {new: true});
+        const normalUser = await NormalUser.findByIdAndUpdate(req.params.id, data, {new: true});
         if(normalUser==null) throw new Error("User not found.");
 
         res.status(200).json(normalUser);
@@ -189,7 +197,7 @@ const updateNormalUser = async (req,res) => {
 const deleteNormalUser = async (req, res) => {
     try {
         const userId = req.params.id; // Assuming you have the user ID in the request parameters
-        const deletedUser = await NormalUser.findOneAndDelete({username: userId, email: req.body.email});
+        const deletedUser = await NormalUser.findByIdAndDelete(userId);
 
         if (!deletedUser) throw new Error("User not found.");
 

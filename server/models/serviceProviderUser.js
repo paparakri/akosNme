@@ -72,7 +72,7 @@ const ServiceProviderUserSchema = new mongoose.Schema(
             type: Array,
             default: []
         }
-    }
+    }, {timestamps:true}
 );
 
 const ServiceProviderUser = mongoose.model("ServiceProviderUser", ServiceProviderUserSchema);
