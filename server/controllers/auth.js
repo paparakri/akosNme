@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const NormalUser = require('../models/normalUser.js');
+const ClubUser = require('../models/clubUser.js');
 
 /* REGISTERING NORMAL USER*/
 const register = async (req, res) => {
@@ -36,6 +37,25 @@ const register = async (req, res) => {
     }
 }
 
+const loginClub = async (req, res) => {
+    try{
+        const { email, password } = req.body;
+        const clubUser = await ClubUser.findOne({ email: email });
+        if(!clubUser) return res.status(400).json ({ msg: "No user associated with that e-mail." });
+        const isMatch = await bcrypt.compare(password, clubUser.password);
+        if(!isMatch) return res.status(400).json({ msg: "Wrong password." });
+        //Create JWTs
+        const accessToken = jwt.sign({username: clubUser.username}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "60s" });
+        const refreshToken = jwt.sign({username: clubUser.username}, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "1d" });
+        //Add the refresh token to the user
+        clubUser.refreshToken = refreshToken;
+        await clubUser.save();
+        res.status(200).json({ "token": accessToken, "user": clubUser, 'userType': 'club' });
+    }catch(err){
+        res.status(500).json({ error: err.message });
+    }
+}
+
 /* LOGGING IN FOR NORMAL USER*/ /* THIS IS NOT SECURE. DIFFERENT AUTHENTICATION NEEDED. POSSIBLY FROM THIRD-PARTY. */
 const login = async (req, res) => {
     try{
@@ -56,4 +76,4 @@ const login = async (req, res) => {
     }
 }
 
-module.exports = { register, login };
+module.exports = { register, login, loginClub };

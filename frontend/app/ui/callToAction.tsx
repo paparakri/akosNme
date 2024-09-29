@@ -46,7 +46,7 @@ export default function CallToActionWithIllustration() {
               >
                 Get started
               </Button>
-              <Button rounded={"full"} px={6}>
+              <Button rounded={"full"} px={6} onClick={() => router.push('/about-us')}>
                 Learn more
               </Button>
             </Stack>

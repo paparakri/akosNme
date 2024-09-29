@@ -17,7 +17,13 @@ export default function RootLayout({
       <body>
         <ChakraProvider>
           <Navbar />
-          <Box background={"#FAF9F6"} pt={50}>
+          <Box 
+            background={"#FAF9F6"} 
+            pt={50}
+            display={"flex"}
+            alignItems="center"
+            justifyContent="center"
+          >
             {children}
           </Box>
           <Footer/>

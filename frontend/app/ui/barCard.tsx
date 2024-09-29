@@ -106,9 +106,9 @@ const BarCard: React.FC<BarCardProps> = ({imageUrl, imageAlt, title, description
               {description}
             </Text>
             <Box>
-              {formattedPrice}
+              ${formattedPrice}
               <Box as="span" color="gray.600" fontSize="sm">
-                / min
+                (min)
               </Box>
             </Box>
   

@@ -66,6 +66,30 @@ const ClubUserSchema = new mongoose.Schema(
         events: {
             type: Array,
             default: []
+        },
+        formattedPrice: {
+            type: Number,
+            default: null
+        },
+        detailedDescription: {
+            type: String,
+            default: ""
+        },
+        features: {
+            type: Array,
+            default: []
+        },
+        address: {
+            type: String,
+            default: ""
+        },
+        tableLayout: {
+            type: Array,
+            default: []
+        },
+        refreshToken: {
+            type: String,
+            default: ""
         }
     },
     {timestamps:true}
