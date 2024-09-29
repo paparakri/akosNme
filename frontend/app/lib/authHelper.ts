@@ -21,6 +21,24 @@ export const signInClubUser = async (data: any) => {
     }
 }
 
+export const loginClubUser = async (data: any) => {
+    try {
+        const config = {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        const res = await axios.post("http://127.0.0.1:3500/ClubLogin", data, config);
+
+        localStorage.setItem('userToken', res.data.token);
+        localStorage.setItem('userType', res.data.userType);
+
+        console.log('token saved in localStorage because of logging in');
+    } catch (error) {
+        console.error("Error submitting form:", error);
+    }  
+}
+
 export const signInNormalUser = async (data: any) => {
     try {
         const config = {

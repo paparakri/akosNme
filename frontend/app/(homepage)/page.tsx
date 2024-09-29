@@ -70,14 +70,14 @@ export default function Home() {
         <CustomHeading>Featured Clubs</CustomHeading>
           <ResponsiveMasonryGrid>
             {barCards.slice(0, 8*page).map((card) => (
-              <Link href={`/club/${card.username}`}>
+              <Link key={card._id.toString()} href={`/club/${card.username}`}>
               <BarCard 
-                key={card._id.toString()} 
+                key={card._id.toString()}
                 imageUrl="" 
                 imageAlt="" 
                 title={card.displayName} 
                 description={card.description} 
-                formattedPrice={300} 
+                formattedPrice={card.formattedPrice} 
                 reviewCount={card.reviews.length} 
                 location={card.location} 
                 rating={card.rating}

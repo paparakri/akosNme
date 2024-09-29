@@ -1,5 +1,9 @@
 import axios from "axios";
 
+export const fetchSearchResults = async (searchQuery : any) => {
+    return null;
+}
+
 export const fetchClubInfo = async (user: any) => {
     try {
       const response = await axios.get(`http://127.0.0.1:3500/club/${user}`, {
@@ -56,6 +60,7 @@ export const fetchFeaturedClubsDetails = async (location: string) => {
 
 export const fetchClubByName = async (clubName: string) => {
     try {
+        //console.log(`Sending GET to the following link: http://127.0.0.1:3500/club/${clubName}/byName`);
         const response = await axios.get(`http://127.0.0.1:3500/club/${clubName}/byName`);
         return response.data;
     } catch (error) {
@@ -70,6 +75,17 @@ export const fetchNormalUser = async (id: string) => {
         return response.data;
     } catch (error) {
         //console.error(`Error fetching user ${username} info: `, error);
+        return null;
+    }
+}
+
+export const saveDataLayout = async ( id: string, tableLayout: Object) => {
+    try{
+        console.log(id);
+        const response = await axios.post(`http://127.0.0.1:3500/club/${id}/save-layout`, {tableLayout});
+        return response.data;
+    } catch (e) {
+        console.error(e);
         return null;
     }
 }

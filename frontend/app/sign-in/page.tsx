@@ -4,7 +4,7 @@ import { Box, Button, Flex, FormControl, FormLabel, Heading, Input, Link, Switch
 import Subtitle from "../ui/subtitle";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginNormalUser } from "../lib/authHelper";
+import { loginNormalUser, loginClubUser } from "../lib/authHelper";
 
 const Login = () => {
   const router = useRouter();
@@ -26,8 +26,17 @@ const Login = () => {
         email: formData.email,
         password: formData.password
     };
-
-    await loginNormalUser(data);
+    try{
+      await loginNormalUser(data);
+    } catch (e: any){
+      console.log(e);
+    }
+    try{
+      await loginClubUser(data);
+    } catch (e: any){
+      console.error(e);
+    }
+    
     router.push('/');
   }
 

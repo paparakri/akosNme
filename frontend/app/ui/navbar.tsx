@@ -86,7 +86,7 @@ export default function Navbar(){
               justify={'flex-end'}
               direction={'row'}
               spacing={6}>
-              <Button as={'a'} fontSize={'sm'} fontWeight={400} variant={'link'} href={'sign-in'}>
+              <Button as={'a'} fontSize={'sm'} fontWeight={400} variant={'link'} href={'/sign-in'}>
                 Sign In
               </Button>
                 <Button
@@ -96,7 +96,7 @@ export default function Navbar(){
                   fontWeight={600}
                   color={'white'}
                   bg={'orange.400'}
-                  href={'sign-up'}
+                  href={'/sign-up'}
                   _hover={{
                     bg: 'orange.300',
                   }}>
@@ -284,7 +284,7 @@ interface NavItem {
 const NAV_ITEMS: Array<NavItem> = [
   {
     label: 'Homepage',
-    href: '#'
+    href: '/'
   },
   {
     label: 'Search',
