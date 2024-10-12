@@ -87,7 +87,7 @@ const UserProfile = () => {
   };
 
   return (
-    <Box width={'80vw'} py={12}>
+    <Box width={'80vw'} py={12} bg="white" boxShadow="xl" borderRadius="xl" px={8}>
       <VStack spacing={8} align="stretch">
         <HStack spacing={8} align="flex-start">
           <Avatar size="2xl" name={userData.name} src={userData.avatar} />

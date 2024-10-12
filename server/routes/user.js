@@ -4,12 +4,16 @@ const path = require('path');
 const verifyToken = require('../middleware/auth.js');
 const { getUserRecs } = require('../controllers/recs');
 const { addRemoveReview, getReviews , updateReview, deleteReview } = require('../controllers/reviews');
-const { getNormalUser, createNormalUser, getNormalUserClubInterests, getNormalUserServiceProviderInterests, addRemoveInterest, updateNormalUser, deleteNormalUser } = require('../controllers/users');
+const { getNormalUser, getNormalUserByName, createNormalUser, getNormalUserClubInterests, getNormalUserServiceProviderInterests, addRemoveInterest, updateNormalUser, deleteNormalUser } = require('../controllers/users');
 
 router.route('/:id')
-    .get(verifyToken, getNormalUser)
-    .put(verifyToken, updateNormalUser)
-    .delete(verifyToken, deleteNormalUser);
+    .get(getNormalUser)
+    .put(updateNormalUser)
+    .delete(deleteNormalUser);
+
+
+router.route('/:user/byName')
+    .get(getNormalUserByName)
 
 router.route('/:id/recs')
     .get(getUserRecs);

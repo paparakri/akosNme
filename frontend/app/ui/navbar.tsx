@@ -14,17 +14,16 @@ import {
   PopoverContent,
   useColorModeValue,
   useBreakpointValue,
-  useDisclosure,
+  useDisclosure
 } from '@chakra-ui/react';
 
 import {
   HamburgerIcon,
   CloseIcon,
   ChevronDownIcon,
-  ChevronRightIcon,
+  ChevronRightIcon
 } from '@chakra-ui/icons';
 
-import Link from 'next/link';
 import { useIsUserSignedIn, ProtectedRoute } from '../lib/userStatus';
 import { logout } from '../lib/authHelper';
 import { useRouter } from 'next/navigation';

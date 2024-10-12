@@ -7,7 +7,7 @@ const ServiceProviderUser = require("../models/serviceProviderUser.js");
 
 const getClubUserByName = async (req, res) => {
     try{
-        console.log(req.params.user);
+        console.log("In getClubUserByName with req: " + req.params.user);
         const user = req.params.user.toLowerCase();
         const clubUser = await ClubUser.findOne({username: user});
         if(clubUser==null) throw new Error("User not found.");
@@ -33,6 +33,7 @@ const getClubUser = async (req, res) => {
 const createClubUser = async (req, res) => {
     try{
         const data = req.body;
+        console.log(data);
         data.username = data.username.toLowerCase();
 
         const salt = await bcrypt.genSalt(10);
@@ -53,6 +54,7 @@ const createClubUser = async (req, res) => {
 
         res.status(201).json({token: token, user: clubUser, userType: 'club'});
     } catch(err){
+        console.log(err);
         res.status(400).json( { error: err.message });
     }
 };

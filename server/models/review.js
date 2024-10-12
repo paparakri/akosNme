@@ -1,33 +1,38 @@
-const mongoose =  require('mongoose');
+const mongoose = require('mongoose');
 
-const ReviewSchema = new mongoose.Schema(
-    {
-        rating: {
+const Schema = mongoose.Schema;
+const ObjectId = Schema.ObjectId;
+
+const ReviewSchema = new mongoose.Schema({
+        user: {
+            type: ObjectId,
+            required: true
+        },
+       club: {
+            type: ObjectId,
+            required: true
+       },
+       rating: {
             type: Number,
-            required: true,
-            min: 1,
-            max: 5
-        },
-        reviewText: {
+            required: true
+       },
+       type: {
+          type: String,
+          default: "club"
+       },
+       reviewText: {
             type: String,
-            required: false,
-            min: 10,
-            max: 500
-        },
-        reviewer: {
-            type: String,
-            required: true,
-            min: 3,
-            max: 50
-        },
-        revieweye: {
-            type: String,
-            required: true,
-            min: 3,
-            max: 50
-        },
-    },
-    {timestamps:true}
+            required: true
+       },
+       likes: {
+            type: Number,
+            default: 0
+       },
+       dislikes: {
+            type: Number,
+            default: 0
+       }
+    },{timestamps:true}
 );
 
 const Review = mongoose.model("Review", ReviewSchema);

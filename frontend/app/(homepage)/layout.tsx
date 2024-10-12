@@ -3,9 +3,7 @@ import Navbar from "../ui/navbar";
 import Footer from "../ui/footer";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import SplashScreen from '@/app/ui/splashscreen';
-import { ChakraProvider, Flex } from "@chakra-ui/react";
-import { Box } from "@chakra-ui/react";
+import { ChakraProvider, Box } from "@chakra-ui/react";
 
 const inter = Inter({ subsets: ["latin"] });
 

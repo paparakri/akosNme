@@ -34,6 +34,38 @@ const NormalUserSchema = new mongoose.Schema(
             required: true,
             min: 8
         },
+        dateOfBirth: {
+            type: Date,
+            required: true
+        },
+        friends: {
+            type: Array,
+            default: []
+        },
+        phoneNumber: {
+            type: String,
+            required: true,
+            min: 8
+        },
+        bio: {
+            type: String,
+            default: ""
+        },
+        favGenres: {
+            type: Array,
+            default: []
+        },
+        reservation: {
+            type: Array,
+            default: []
+        },
+        loyaltyPoints: {
+            type: Number,
+            default: 0
+        },
+        notifPreferences: {
+            type: Object
+        },
         picturePath: {
             type: String,
             default: ""

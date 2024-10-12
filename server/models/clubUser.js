@@ -33,8 +33,8 @@ const ClubUserSchema = new mongoose.Schema(
         location: {
             type: String,
             required: true,
-            min:3,
-            max:70
+            min: 3,
+            max: 50
         },
         rating: {
             type: Number,
@@ -43,8 +43,8 @@ const ClubUserSchema = new mongoose.Schema(
             max: 5,
             default: 0
         },
-        picturePath: {
-            type: String,
+        images: {
+            type: [{type: String}],
             default: ""
         },
         description: {
@@ -90,6 +90,33 @@ const ClubUserSchema = new mongoose.Schema(
         refreshToken: {
             type: String,
             default: ""
+        },
+        genres: {
+            type: [{type: String}],
+            default: ""
+        },
+        capacity: {
+            type: Number
+        },
+        openingHours: {
+            type:Object
+        },
+        minAge: {
+            type: Number,
+            default: 21
+        },
+        dressCode: {
+            type: String
+        },
+        contactInfo: {
+            type: Object
+        },
+        socialMediaLinks: {
+            type: Object
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
         }
     },
     {timestamps:true}

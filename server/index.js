@@ -41,9 +41,9 @@ app.use('/', require('./routes/root.js'));
 app.use('/refresh', require('./routes/refresh.js'));
 app.use('/logout', require('./routes/logout.js'));
 
-app.use('/user', verifyToken, require('./routes/user.js'));
-app.use('/club', verifyToken, require('./routes/club.js'));
-app.use('/provider', verifyToken, require('./routes/provider.js'));
+app.use('/user', require('./routes/user.js'));
+app.use('/club', require('./routes/club.js'));
+app.use('/provider', require('./routes/provider.js'));
 
 app.all('*', require('./config/404'));
 
