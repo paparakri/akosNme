@@ -4,47 +4,46 @@ const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
 
 const EventSchema = new mongoose.Schema({
-    organizer: {
+    club: {
         type: ObjectId,
-        required: true,
-        min: 3,
-        max: 50
+        ref: 'Club'
     },
-    title: {
+    name: {
         type: String,
-        required: true,
-        min: 3,
-        max: 50
+        required: true
     },
     description: {
         type: String,
-        required: true,
-        min: 3,
-        max: 200
+        required: true
     },
     date: {
         type: Date,
         required: true
     },
-    picturePath: {
-        type: String,
-        default: ""
+    startTime: {
+        type: Date,
+        required: true
     },
-    location: {
-        type: String,
+    price: {
+        type: Number,
+        required: true
+    },
+    availableTickets: {
+        type: Number,
+        required: true
+    },
+    serviceProviders: {
+        type: Array
+    },
+    eventType: {
+        type: String, //e.g. concert, festival, etc.
+    },
+    minAge: {
+        type: Number,
         required: true,
-        min: 3,
-        max: 50
+        default: 21
     },
-    interested: {
-        type: Array,
-        default: []
-    },
-    going: {
-        type: Array,
-        default: []
-    },
-    artists: {
+    images: {
         type: Array,
         default: []
     }

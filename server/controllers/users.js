@@ -193,6 +193,18 @@ const updateNormalUser = async (req,res) => {
     }
 };
 
+const getNormalUserByName = async (req, res) => {
+    try {
+        const normalUser = await NormalUser.findOne({ username: req.params.user });
+        if (!normalUser) throw new Error("User not found.");
+
+        res.status(200).json(normalUser);
+    } catch (err) {
+        console.log(err);
+        res.status(404).json({ error: err.message });
+    }
+}
+
 /* DELETE */
 const deleteNormalUser = async (req, res) => {
     try {
@@ -207,4 +219,4 @@ const deleteNormalUser = async (req, res) => {
     }
 };
 
-module.exports = { getNormalUser, createNormalUser, getNormalUserClubInterests, getNormalUserServiceProviderInterests, addRemoveInterest, updateNormalUser, deleteNormalUser };
+module.exports = { getNormalUser, getNormalUserByName, createNormalUser, getNormalUserClubInterests, getNormalUserServiceProviderInterests, addRemoveInterest, updateNormalUser, deleteNormalUser };

@@ -1,7 +1,6 @@
 "use client";
-import axios from "axios";
 import { useEffect, useState } from "react";
-import { Box, Button, Heading, Text } from "@chakra-ui/react";
+import { Box, Button } from "@chakra-ui/react";
 
 import BarCard from "../ui/barCard";
 import SearchBar from "../ui/searchBar";
@@ -9,8 +8,8 @@ import CustomHeading from "../ui/heading";
 import SplashScreen from "../ui/splashscreen";
 import CallToActionWithIllustration from "../ui/callToAction";
 import ResponsiveMasonryGrid from "../ui/responsiveMasonryGrid";
-import { ProtectedRoute, UnprotectedRoute } from "../lib/userStatus";
-import { fetchClubByName, fetchFeaturedClubs, fetchFeaturedClubsDetails } from "../lib/backendAPI";
+import { UnprotectedRoute } from "../lib/userStatus";
+import { fetchClubByName, fetchFeaturedClubsDetails } from "../lib/backendAPI";
 import Link from "next/link";
 
 interface BarCardData {
@@ -40,7 +39,7 @@ export default function Home() {
         setBarCards(initialBars.filter((info): info is BarCardData => info !== null));
 
       } catch (error) {
-        console.error("Error fetching clubs:", error);
+        console.error("!!!!!!!!!!!Error fetching clubs:", error);
       } finally {
         setIsLoading(false);
       }

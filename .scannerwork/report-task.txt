@@ -1,0 +1,6 @@
+projectKey=AkosEtMoi
+serverUrl=http://localhost:9000
+serverVersion=10.7.0.96327
+dashboardUrl=http://localhost:9000/dashboard?id=AkosEtMoi
+ceTaskId=21fe2c97-3861-44d7-825d-5ed1043a59ab
+ceTaskUrl=http://localhost:9000/api/ce/task?id=21fe2c97-3861-44d7-825d-5ed1043a59ab

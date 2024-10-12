@@ -34,9 +34,10 @@ const getEvents = async (req, res) => {
 const postEvent = async (req, res) => {
     try{
         let data = req.body;
-        data.organizer = clubUser._id;
         const user = req.params.user;
         const clubUser = await ClubUser.findById(user);
+        data.organizer = clubUser._id;
+        
 
         const newEvent = await Event.create(data);
 

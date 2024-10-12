@@ -5,59 +5,104 @@ const Review = require("../models/review.js");
 
 //POST
 const addRemoveReview = async (req, res) => {
-    try{
+    try {
+        console.log(`Adding/Removing Review`);
+        console.log(req.body);
+
         const id = req.params.id;
-        const { interestId, type, rating, reviewText } = req.body;    // I'm also adding a type variable here. So I know if it's a club or S.P.
-        const normalUser = await NormalUser.findById(id);
-        if(type == "club"){
-            //Get the club user
-            const interestUser = await ClubUser.findById(interestId);
-            
-            //Check if the user has already reviewed the club
-            if (await Review.findOne({ reviewer: normalUser._id, revieweye: interestUser._id })){
-                throw new Error("You have already reviewed this club.");
-                //NEED TO CREATE A FUNCTION TO DELETE THE REVIEW FROM THE REVIEW DB, THE CLUB USER & THE NORMAL USER IF THE REVIEW ALREADY EXISTS
+        const { club, type, rating, reviewText } = req.body; // type variable indicates if it's a club or service provider
+        let exists = false;
+
+        const existingReview = await Review.findOne({ user: id, club: club });
+
+        if (existingReview) {
+            exists = true;
+            // Remove the review from the Review collection
+            const response = await Review.deleteOne({ user: id, club: club });
+
+            // Remove the review from the lists in the user and the club/service provider
+            const normalUser = await NormalUser.findById(id);
+            let interestUser;
+
+            if (type === "club") {
+                interestUser = await ClubUser.findById(club);
+            } else if (type === "serviceProvider") {
+                interestUser = await ServiceProviderUser.findById(club);
+            } else {
+                throw new Error("Invalid type specified.");
             }
 
-            //Create the review and add it to the review DB & reference it in the club user & the normal user
-            const review = { rating, reviewText, reviewer: normalUser._id , reviewDate: Date.now() , revieweye: interestUser._id};
-            const newReview = await Review.create(review);
-
-            normalUser.yourReviews.push(newReview._id);
+            // Remove the review ID from the user's yourReviews array
+            normalUser.yourReviews = normalUser.yourReviews.filter(reviewId => 
+                reviewId.toString() !== existingReview._id.toString()
+            );
             await normalUser.save();
-            interestUser.reviews.push(newReview._id);
+
+            // Remove the review ID from the club/service provider's reviews array
+            interestUser.reviews = interestUser.reviews.filter(reviewId => 
+                reviewId.toString() !== existingReview._id.toString()
+            );
             await interestUser.save();
 
-            //CALCULATE THE CLUB'S NEW RATING
-            const clubReviews = await Review.find({ revieweye: interestUser._id });
-            const totalRating = clubReviews.reduce((sum, review) => sum + review.rating, 0);
-            const newAvgRating = totalRating / clubReviews.length;
-            interestUser.rating = newAvgRating;
-            await interestUser.save();
-
-            res.status(200).json({message: "Review added."});
-        } else if (type == "serviceProvider"){
-            //Get the club user
-            const interestUser = await ServiceProviderUser.findById(interestId);
-            
-            //Check if the user has already reviewed the club
-            if (await Review.findOne({ reviewer: normalUser._id, revieweye: interestUser._id })){
-                throw new Error("You have already reviewed this club.");
+            // If it's a club, recalculate the club's rating
+            if (type === "club") {
+                const clubReviews = await Review.find({ club: interestUser._id });
+                if (clubReviews.length > 0) {
+                    const totalRating = clubReviews.reduce((sum, review) => sum + review.rating, 0);
+                    const newAvgRating = totalRating / clubReviews.length;
+                    interestUser.rating = newAvgRating;
+                } else {
+                    interestUser.rating = 0; // or any default value you prefer
+                }
+                await interestUser.save();
             }
 
-            //Create the review and add it to the review DB & reference it in the club user & the normal user
-            const review = { rating, reviewText, reviewer: normalUser._id , reviewDate: Date.now() , revieweye: interestUser._id};
-            const newReview = await Review.create(review);
-
-            normalUser.yourReviews.push(newReview._id);
-            await normalUser.save();
-            interestUser.reviews.push(newReview._id);
-            await interestUser.save();
-
-            res.status(200).json({message: "Review added."});
+            console.log(response);
+            res.status(200).json({ message: "Review removed." });
         }
-    } catch(err){
-        res.status(400).json( { error: err.message });
+        if(!exists){
+            const normalUser = await NormalUser.findById(id);
+            let interestUser;
+            if (type === "club") {
+                // Get the club user
+                interestUser = await ClubUser.findById(club);
+            } else if (type === "serviceProvider") {
+                // Get the service provider user
+                interestUser = await ServiceProviderUser.findById(club);
+            } else {
+                throw new Error("Invalid type specified.");
+            }
+
+            // Check if the user has already reviewed the club/service provider
+
+            // Create the review and add it to the review DB & reference it in the user
+            const review = {
+                user: normalUser._id,
+                club: interestUser._id, // Assuming 'club' refers to the interestUser in both cases
+                rating: rating,
+                reviewText: reviewText,
+                date: Date.now()
+            };
+            const newReview = await Review.create(review);
+
+            normalUser.yourReviews.push(newReview._id);
+            await normalUser.save();
+            interestUser.reviews.push(newReview._id);
+            await interestUser.save();
+
+            // If it's a club, calculate the club's new rating
+            if (type === "club") {
+                const clubReviews = await Review.find({ club: interestUser._id });
+                const totalRating = clubReviews.reduce((sum, review) => sum + review.rating, 0);
+                const newAvgRating = totalRating / clubReviews.length;
+                interestUser.rating = newAvgRating;
+                await interestUser.save();
+            }
+
+            res.status(200).json({ message: "Review added." });
+        }
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
 };
 
@@ -72,12 +117,12 @@ const getReviews = async (req, res) => {
         );
 
         reviews = await Promise.all(reviews.map(async (review) => {
-            const reviewer = await NormalUser.findById(review.reviewer);
-            const revieweye = await ClubUser.findById(review.revieweye);
+            const user = await NormalUser.findById(review.user);
+            const club = await ClubUser.findById(review.club);
             return {
                 ...review._doc,
-                reviewer: reviewer ? reviewer.username : null,
-                revieweye: revieweye ? revieweye.displayName : null
+                user: user ? user.username : null,
+                club: club ? club.displayName : null
             };
         }));
 
@@ -108,13 +153,13 @@ const deleteReview = async (req, res) => {
         const { reviewId } = req.body;
         const normalUser = await NormalUser.findById(username);
         const review = await Review.findById(reviewId);
-        const revieweye = await ClubUser.findById(review.revieweye);
-        if (review.reviewer != normalUser._id){
+        const club = await ClubUser.findById(review.club);
+        if (review.user != normalUser._id){
             throw new Error("You can only delete your own reviews.");
         }
         await Review.findByIdAndDelete(reviewId);
         normalUser.yourReviews = normalUser.yourReviews.filter((id) => id != reviewId);
-        revieweye.reviews = revieweye.reviews.filter((id) => id != reviewId);
+        club.reviews = club.reviews.filter((id) => id != reviewId);
         await normalUser.save();
         res.status(200).json({message: "Review deleted."});
     } catch(err){
@@ -122,4 +167,14 @@ const deleteReview = async (req, res) => {
     }
 };
 
-module.exports = { addRemoveReview, getReviews, updateReview, deleteReview };
+const getReviewById = async (req, res) => {
+    try{
+        const reviewId = req.params.id;
+        const review = await Review.findById(reviewId);
+        res.status(200).json(review);
+    } catch(err){
+        res.status(400).json( { error: err.message });
+    }
+}
+
+module.exports = { addRemoveReview, getReviews, updateReview, deleteReview, getReviewById };

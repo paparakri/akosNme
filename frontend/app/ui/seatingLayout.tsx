@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Stage, Layer, Image } from 'react-konva';
 import useImage from 'use-image';
 
 type Table = { width: number; height: number; x: number; y: number; };
@@ -6,29 +7,42 @@ type TableList = Table[];
 
 interface LayoutDisplayProps {
     tableList: TableList;
+    containerWidth: number;
+    containerHeight: number;
 }
 
-const LayoutDisplay: React.FC<LayoutDisplayProps> = ({ tableList }) => {
+const LayoutDisplay: React.FC<LayoutDisplayProps> = ({ tableList, containerWidth, containerHeight }) => {
     const [image] = useImage('/table1.png');
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [scale, setScale] = useState(1);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (canvas && image) {
-            const context = canvas.getContext('2d');
-            if (context) {
-                context.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-                tableList.forEach((table) => {
-                    context.drawImage(image, table.x, table.y, table.width, table.height);
-                });
-            }
-        }
-    }, [image, tableList]);
+        // Find the maximum x and y coordinates of tables
+        const maxX = Math.max(...tableList.map(table => table.x + table.width));
+        const maxY = Math.max(...tableList.map(table => table.y + table.height));
+
+        // Calculate scale to fit the layout within the container
+        const scaleX = containerWidth / maxX;
+        const scaleY = containerHeight / maxY;
+        const newScale = Math.min(scaleX, scaleY, 1); // Ensure we don't scale up
+
+        setScale(newScale);
+    }, [tableList, containerWidth, containerHeight]);
 
     return (
-        <div style={{ border: '2px solid black', display: 'inline-block', background: "#e1e0dd" }}>
-            <canvas ref={canvasRef} width={700} height={500} />
-        </div>
+        <Stage width={containerWidth} height={containerHeight}>
+            <Layer>
+                {tableList.map((table, index) => (
+                    <Image
+                        key={index}
+                        image={image}
+                        x={table.x * scale}
+                        y={table.y * scale}
+                        width={table.width * scale}
+                        height={table.height * scale}
+                    />
+                ))}
+            </Layer>
+        </Stage>
     );
 };
 
