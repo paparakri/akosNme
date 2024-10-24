@@ -7,14 +7,14 @@ import {
 } from '@chakra-ui/react';
 import { StarIcon, CheckIcon, PhoneIcon, EmailIcon } from '@chakra-ui/icons';
 import { FaFacebook, FaInstagram, FaTwitter } from 'react-icons/fa';
-import { fetchClubByName, switchUsername2Id, addRemoveReview } from '@/app/lib/backendAPI';
+import { fetchClubByName, switchUsername2Id, addReview } from '@/app/lib/backendAPI';
 import ReservationModal from '@/app/ui/reservationModel';
 import LayoutDisplay from '@/app/ui/seatingLayout';
 import { OpeningHoursInfo, openingHoursToString } from '@/app/ui/openHoursPicker';
 import ReviewComponent from '@/app/ui/clubProfile/reviewComponent';
 import CreateReviewModal from '@/app/ui/clubProfile/createReviewModal';
 import { jwtDecode } from 'jwt-decode';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface ClubData {
   _id: string;
@@ -57,6 +57,7 @@ const ClubProfile: React.FC<{ params: { clubName: string } }> = ({ params }) => 
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const router = useRouter();
+  const pathname = usePathname();
 
   const fetchClubData = useCallback(async () => {
     try {
@@ -76,7 +77,7 @@ const ClubProfile: React.FC<{ params: { clubName: string } }> = ({ params }) => 
   const handleCreateReview = async (review: { rating: number; reviewText: string }) => {
     if (!currentUserId || !clubData) return;
     try {
-      await addRemoveReview(clubData._id, currentUserId, review);
+      await addReview(clubData._id, currentUserId, review);
       await fetchClubData();
       setIsCreateReviewModalOpen(false);
     } catch (error) {
@@ -156,7 +157,7 @@ const ClubProfile: React.FC<{ params: { clubName: string } }> = ({ params }) => 
                   </HStack>
                 </HStack>
               </Box>
-              <Button colorScheme="orange" size="lg" onClick={() => router.push(`/reservation`)} boxShadow="lg">
+              <Button colorScheme="orange" size="lg" onClick={() => router.push(`${pathname}/reservation`)} boxShadow="lg">
                 Reserve a Table
               </Button>
             </Flex>
@@ -297,7 +298,7 @@ const ClubProfile: React.FC<{ params: { clubName: string } }> = ({ params }) => 
           <Button
             colorScheme="orange"
             size="lg"
-            onClick={() => setIsReservationModalOpen(true)}
+            onClick={() => router.push(`${pathname}/reservation`)}
             boxShadow="lg"
           >
             Reserve a Table

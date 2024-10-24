@@ -180,9 +180,11 @@ const createNormalUser = async (req, res) => {
 const updateNormalUser = async (req,res) => {
     try{
         let data = req.body;
-        const salt = await bcrypt.genSalt(10);
-        const uniqueSalt = `${salt}${req.body.username}`;
-        data.password = await bcrypt.hash(req.body.password, uniqueSalt);
+        if(req.body.password){
+            const salt = await bcrypt.genSalt(10);
+            const uniqueSalt = `${salt}${req.body.username}`;
+            data.password = await bcrypt.hash(req.body.password, uniqueSalt);
+        }
         const normalUser = await NormalUser.findByIdAndUpdate(req.params.id, data, {new: true});
         if(normalUser==null) throw new Error("User not found.");
 

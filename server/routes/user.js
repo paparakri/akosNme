@@ -3,8 +3,18 @@ const router = express.Router();
 const path = require('path');
 const verifyToken = require('../middleware/auth.js');
 const { getUserRecs } = require('../controllers/recs');
-const { addRemoveReview, getReviews , updateReview, deleteReview } = require('../controllers/reviews');
-const { getNormalUser, getNormalUserByName, createNormalUser, getNormalUserClubInterests, getNormalUserServiceProviderInterests, addRemoveInterest, updateNormalUser, deleteNormalUser } = require('../controllers/users');
+const { addReview, getReviews , updateReview, removeReview } = require('../controllers/reviews');
+const { 
+    getNormalUser, 
+    getNormalUserByName, 
+    createNormalUser, 
+    getNormalUserClubInterests, 
+    getNormalUserServiceProviderInterests, 
+    addRemoveInterest, 
+    updateNormalUser, 
+    deleteNormalUser
+} = require('../controllers/users');
+const { getReservations }  = require('../controllers/reservations.js');
 
 router.route('/:id')
     .get(getNormalUser)
@@ -33,8 +43,11 @@ router.route('/:id/add')
 
 router.route('/:id/reviews')
     .get(getReviews)
-    .post(addRemoveReview)
+    .post(addReview)
     .put(updateReview)
-    .delete(deleteReview);
+    .delete(removeReview);
+
+router.route('/:id/reservations')
+    .get(getReservations);
 
 module.exports = router;

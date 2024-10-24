@@ -51,6 +51,10 @@ const ClubUserSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
+        reservations: {
+            type: Array,
+            default: []
+        },
         serviceProviderInterests: {
             type: Array,
             default: []

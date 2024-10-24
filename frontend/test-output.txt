@@ -1,0 +1,659 @@
+  console.error
+    Warning: An update to AccountSettingsPage inside a test was not wrapped in act(...).
+    
+    When testing, code that causes React state updates should be wrapped into act(...):
+    
+    act(() => {
+      /* fire events that update state */
+    });
+    /* assert on the output */
+    
+    This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+        at AccountSettingsPage (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:51:36)
+
+    [0m [90m 60 |[39m       [36mif[39m (user[33m?[39m[33m.[39musername) {
+     [90m 61 |[39m         switchUsername2Id(user[33m.[39musername)[33m.[39mthen((id) [33m=>[39m {
+    [31m[1m>[22m[39m[90m 62 |[39m           setUserId(id)[33m;[39m
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 63 |[39m           fetchUserSettings(id)[33m.[39mthen((fetchedSettings) [33m=>[39m {
+     [90m 64 |[39m             setSettings(fetchedSettings)[33m;[39m
+     [90m 65 |[39m             setIsLoading([36mfalse[39m)[33m;[39m[0m
+
+      at printWarning (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at setUserId (app/my-profile/account-settings/page.tsx:62:11)
+
+  console.error
+    Warning: An update to AccountSettingsPage inside a test was not wrapped in act(...).
+    
+    When testing, code that causes React state updates should be wrapped into act(...):
+    
+    act(() => {
+      /* fire events that update state */
+    });
+    /* assert on the output */
+    
+    This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+        at AccountSettingsPage (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:51:36)
+
+    [0m [90m 62 |[39m           setUserId(id)[33m;[39m
+     [90m 63 |[39m           fetchUserSettings(id)[33m.[39mthen((fetchedSettings) [33m=>[39m {
+    [31m[1m>[22m[39m[90m 64 |[39m             setSettings(fetchedSettings)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 65 |[39m             setIsLoading([36mfalse[39m)[33m;[39m
+     [90m 66 |[39m           })[33m;[39m
+     [90m 67 |[39m         })[33m;[39m[0m
+
+      at printWarning (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at setSettings (app/my-profile/account-settings/page.tsx:64:13)
+
+  console.error
+    Warning: An update to AccountSettingsPage inside a test was not wrapped in act(...).
+    
+    When testing, code that causes React state updates should be wrapped into act(...):
+    
+    act(() => {
+      /* fire events that update state */
+    });
+    /* assert on the output */
+    
+    This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+        at AccountSettingsPage (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:51:36)
+
+    [0m [90m 63 |[39m           fetchUserSettings(id)[33m.[39mthen((fetchedSettings) [33m=>[39m {
+     [90m 64 |[39m             setSettings(fetchedSettings)[33m;[39m
+    [31m[1m>[22m[39m[90m 65 |[39m             setIsLoading([36mfalse[39m)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 66 |[39m           })[33m;[39m
+     [90m 67 |[39m         })[33m;[39m
+     [90m 68 |[39m       }[0m
+
+      at printWarning (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at setIsLoading (app/my-profile/account-settings/page.tsx:65:13)
+
+  console.error
+    Warning: validateDOMNesting(...): <p> cannot appear as a descendant of <p>.
+        at p
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Text2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\text.tsx:37:18)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\stack\stack.tsx:81:5
+        at HStack
+        at p
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Text2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\text.tsx:37:18)
+        at children (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:31:21)
+        at div
+        at MotionComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\framer-motion@11.11.9_@emotion+is-prop-valid@1.3.0_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\framer-motion\dist\cjs\index.js:10658:22)
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at MenuList2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+menu@2.2.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_reac_re2y5gbx6y7pf24ls7ryid3ng4\node_modules\@chakra-ui\menu\src\menu-list.tsx:48:11)
+        at Menu (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+menu@2.2.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_reac_re2y5gbx6y7pf24ls7ryid3ng4\node_modules\@chakra-ui\menu\src\menu.tsx:44:11)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\stack\stack.tsx:81:5
+        at VStack
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Container2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\container.tsx:39:18)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Flex2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\flex.tsx:64:11)
+        at AccountSettingsPage (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:51:36)
+
+      at printWarning (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at validateDOMNesting (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:10849:7)
+      at createInstance (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:10930:5)
+      at completeWork (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:22226:28)
+      at completeUnitOfWork (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26632:16)
+      at performUnitOfWork (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26607:5)
+      at workLoopSync (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26505:5)
+      at renderRootSync (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26473:7)
+      at performConcurrentWorkOnRoot (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:25777:74)
+      at workLoop (node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+      at flushWork (node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+      at performWorkUntilDeadline (node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+      at Timeout.task [as _onTimeout] (node_modules/.pnpm/jsdom@20.0.3_canvas@2.11.2/node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
+
+  console.error
+    Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\stack\stack.tsx:81:5
+        at HStack
+        at p
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Text2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\text.tsx:37:18)
+        at children (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:31:21)
+        at div
+        at MotionComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\framer-motion@11.11.9_@emotion+is-prop-valid@1.3.0_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\framer-motion\dist\cjs\index.js:10658:22)
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at MenuList2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+menu@2.2.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_reac_re2y5gbx6y7pf24ls7ryid3ng4\node_modules\@chakra-ui\menu\src\menu-list.tsx:48:11)
+        at Menu (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+menu@2.2.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_reac_re2y5gbx6y7pf24ls7ryid3ng4\node_modules\@chakra-ui\menu\src\menu.tsx:44:11)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\stack\stack.tsx:81:5
+        at VStack
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Container2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\container.tsx:39:18)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at div
+        at C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1\node_modules\@emotion\react\dist\emotion-element-832b737b.browser.cjs.js:71:23
+        at ChakraComponent (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_react@18.3.1__@emotion+sty_aakatm6thzmexl52ucivvwzwaq\node_modules\@chakra-ui\system\src\system.ts:88:53)
+        at Flex2 (C:\Users\Chris\Desktop\akosEtMoi\frontend\node_modules\.pnpm\@chakra-ui+layout@2.3.1_@chakra-ui+system@2.6.2_@emotion+react@11.13.0_@types+react@18.3.3_re_rhwmpieiemaihohwy6rvp4pifq\node_modules\@chakra-ui\layout\src\flex.tsx:64:11)
+        at AccountSettingsPage (C:\Users\Chris\Desktop\akosEtMoi\frontend\app\my-profile\account-settings\page.tsx:51:36)
+
+      at printWarning (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at validateDOMNesting (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:10849:7)
+      at createInstance (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:10930:5)
+      at completeWork (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:22226:28)
+      at completeUnitOfWork (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26632:16)
+      at performUnitOfWork (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26607:5)
+      at workLoopSync (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26505:5)
+      at renderRootSync (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26473:7)
+      at performConcurrentWorkOnRoot (node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:25777:74)
+      at workLoop (node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+      at flushWork (node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+      at performWorkUntilDeadline (node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+      at Timeout.task [as _onTimeout] (node_modules/.pnpm/jsdom@20.0.3_canvas@2.11.2/node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
+
+  console.log
+    123
+
+      at log (app/my-profile/account-settings/page.tsx:91:13)
+
+  console.log
+    {
+      notifications: {
+        email: true,
+        push: false,
+        choice: {
+          clubToggle: true,
+          friendToggle: false,
+          artistToggle: true,
+          timeBefore: 30,
+          timeToggle: true
+        }
+      },
+      security: { twoFactor: true },
+      privacy: {
+        shareData: true,
+        publicProfile: false,
+        shareEmail: true,
+        shareLocation: false,
+        sharePhone: true,
+        shareReservations: false
+      }
+    }
+
+      at log (app/my-profile/account-settings/page.tsx:92:13)
+
+  console.log
+    123
+
+      at log (app/my-profile/account-settings/page.tsx:91:13)
+
+  console.log
+    {
+      notifications: {
+        email: true,
+        push: false,
+        choice: {
+          clubToggle: true,
+          friendToggle: false,
+          artistToggle: true,
+          timeBefore: 30,
+          timeToggle: true
+        }
+      },
+      security: { twoFactor: true },
+      privacy: {
+        shareData: true,
+        publicProfile: false,
+        shareEmail: true,
+        shareLocation: false,
+        sharePhone: true,
+        shareReservations: false
+      }
+    }
+
+      at log (app/my-profile/account-settings/page.tsx:92:13)
+
+FAIL app/my-profile/account-settings/page.early.test/AccountSettingsPage.early.test.tsx
+  AccountSettingsPage() AccountSettingsPage method
+    √ should render loading state initially (70 ms)
+    × should fetch and display user settings (169 ms)
+    × should handle setting changes (77 ms)
+    √ should save changes successfully (97 ms)
+    √ should handle save errors (178 ms)
+
+  ● AccountSettingsPage() AccountSettingsPage method › should fetch and display user settings
+
+    TestingLibraryElementError: Unable to find a label with the text of: Email Notifications
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"css-1q5wr62"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"css-yknd1v"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"css-2rlxtj"[39m
+            [36m>[39m
+              [36m<h2[39m
+                [33mclass[39m=[32m"chakra-heading css-0"[39m
+              [36m>[39m
+                [0mTuneSync[0m
+              [36m</h2>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"chakra-stack css-i1hjkn"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mNotifications[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mSecurity[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mLanguage & Region[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mPrivacy[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mReservation History[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mFriends & Referrals[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"css-1misgi4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"css-16pdoq3"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"css-1lekzkb"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"css-70qvj9"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33mclass[39m=[32m"lucide lucide-chevron-left"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"6"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"6"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"m15 18-6-6 6-6"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"chakra-heading css-14gt3bc"[39m
+                  [36m>[39m
+                    [0mAccount Settings[0m
+                  [36m</h2>[39m
+                [36m</div>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"chakra-button css-4xx2wk"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mSave Changes[0m
+                [36m</button>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"chakra-container css-7jxqx2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"chakra-stack css-kcv14"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"css-0"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"chakra-heading css-1itv5e3"[39m
+                  [36m>[39m
+                    [0mNotifications[0m
+                  [36m</h2>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"css-1sl8bg8"[39m
+                  [36m>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"chakra-text css-0"[39m
+                    [36m>[39m
+                      [0mEmail Notifications[0m
+                    [36m</p>[39m
+                    [36m<label[39m
+                      [33mclass[39m=[32m"chakra-switch css-16pgy8f"[39m
+                      [33mdata-checked[39m=[32m""[39m
+                    [36m>[39m
+                      [36m<input[39m
+                        [33mchecked[39m=[32m""[39m
+                        [33mclass[39m=[32m"chakra-switch__input"[39m
+                        [33mstyle[39m=[32m"border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; width: 1px; margin: -1px; padding: 0px; overflow: hidden; white-space: nowrap; position: absolute;"[39m
+                        [33mtype[39m=[32m"checkbox"[39m
+                        [33mvalue[39m=[32m""[39m
+                      [36m/>[39m
+                      [36m<span[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"chakra-switch__track css-14qxnv8"[39m
+                        [33mdata-checked[39m=[32m""[39m
+                      [36m>[39m
+                        [36m<span[39m
+                          [33mclass[39m=[32m"chakra-switch__thumb css-0"[39m
+                          [33mdata-checked[39m=[32m""[39m
+                        [36m/>[39m
+                      [36m</span>[39m
+                    [36m</label>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"css-1sl8bg8"[39m
+                  [36m>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"chakra-text css-0"[39m
+                    [36m>[39m
+                      [0mPush Notifications[0m
+                    [36m</p>[39m
+                    [36m<label[39m
+                      [33mclass[39m=[32m"chakra-switch css-16pgy8f"[39m
+                    [36m>[39m
+                      [36m<input[39m
+                        [33mclass[39m=[32m"chakra-switch__input"[39m
+                        [33mstyle[39m=[32m"border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; width: 1px; margin: -1px; padding: 0px; overflow: hidden; white-space: nowrap; position: absolute;"[39m
+                        [33mtype[39m=[32m"checkbox"[39m
+                        [33mvalue[39m=[32m""[39m
+                      [36m/>[39m
+                      [36m<span[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"chakra-switch__track css-14qxnv8"[39m
+                      [36m>[39m
+                        [36m<span[39m
+                          [33mclass[39m=[32m"chakra-switch__thumb css-0"[39m
+                        [36m/>[39m
+                      [36m</span>[39m
+                    [36m</label>[39m
+                  [36m</div>[39m
+                  [36m<button[39m
+                    [33maria-controls[39m=[32m"menu-list-:r1:"[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33maria-haspopup[39m=[32m"menu"[39m
+                    [33mclass[39m=[32m"chakra-button chakra-menu__menu...
+
+    [0m [90m 79 |[39m     [36mawait[39m waitFor(() [33m=>[39m expect(fetchUserSettings)[33m.[39mtoHaveBeenCalledWith(mockUserId))[33m;[39m
+     [90m 80 |[39m     expect(screen[33m.[39mgetByText([32m'Account Settings'[39m))[33m.[39mtoBeInTheDocument()[33m;[39m
+    [31m[1m>[22m[39m[90m 81 |[39m     expect(screen[33m.[39mgetByLabelText([32m'Email Notifications'[39m))[33m.[39mtoBeChecked()[33m;[39m
+     [90m    |[39m                   [31m[1m^[22m[39m
+     [90m 82 |[39m     expect(screen[33m.[39mgetByLabelText([32m'Push Notifications'[39m))[33m.[39mnot[33m.[39mtoBeChecked()[33m;[39m
+     [90m 83 |[39m   })[33m;[39m
+     [90m 84 |[39m[0m
+
+      at Object.getElementError (node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getAllByLabelText (node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/queries/label-text.js:111:38)
+      at node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByLabelText (app/my-profile/account-settings/page.early.test/AccountSettingsPage.early.test.tsx:81:19)
+
+  ● AccountSettingsPage() AccountSettingsPage method › should handle setting changes
+
+    TestingLibraryElementError: Unable to find a label with the text of: Email Notifications
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"css-1q5wr62"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"css-yknd1v"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"css-2rlxtj"[39m
+            [36m>[39m
+              [36m<h2[39m
+                [33mclass[39m=[32m"chakra-heading css-0"[39m
+              [36m>[39m
+                [0mTuneSync[0m
+              [36m</h2>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"chakra-stack css-i1hjkn"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mNotifications[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mSecurity[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mLanguage & Region[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mPrivacy[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mReservation History[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"chakra-text css-8zdn9e"[39m
+              [36m>[39m
+                [0mFriends & Referrals[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"css-1misgi4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"css-16pdoq3"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"css-1lekzkb"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"css-70qvj9"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33mclass[39m=[32m"lucide lucide-chevron-left"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"6"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"6"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"m15 18-6-6 6-6"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"chakra-heading css-14gt3bc"[39m
+                  [36m>[39m
+                    [0mAccount Settings[0m
+                  [36m</h2>[39m
+                [36m</div>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"chakra-button css-4xx2wk"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mSave Changes[0m
+                [36m</button>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"chakra-container css-7jxqx2"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"chakra-stack css-kcv14"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"css-0"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"chakra-heading css-1itv5e3"[39m
+                  [36m>[39m
+                    [0mNotifications[0m
+                  [36m</h2>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"css-1sl8bg8"[39m
+                  [36m>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"chakra-text css-0"[39m
+                    [36m>[39m
+                      [0mEmail Notifications[0m
+                    [36m</p>[39m
+                    [36m<label[39m
+                      [33mclass[39m=[32m"chakra-switch css-16pgy8f"[39m
+                      [33mdata-checked[39m=[32m""[39m
+                    [36m>[39m
+                      [36m<input[39m
+                        [33mchecked[39m=[32m""[39m
+                        [33mclass[39m=[32m"chakra-switch__input"[39m
+                        [33mstyle[39m=[32m"border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; width: 1px; margin: -1px; padding: 0px; overflow: hidden; white-space: nowrap; position: absolute;"[39m
+                        [33mtype[39m=[32m"checkbox"[39m
+                        [33mvalue[39m=[32m""[39m
+                      [36m/>[39m
+                      [36m<span[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"chakra-switch__track css-14qxnv8"[39m
+                        [33mdata-checked[39m=[32m""[39m
+                      [36m>[39m
+                        [36m<span[39m
+                          [33mclass[39m=[32m"chakra-switch__thumb css-0"[39m
+                          [33mdata-checked[39m=[32m""[39m
+                        [36m/>[39m
+                      [36m</span>[39m
+                    [36m</label>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"css-1sl8bg8"[39m
+                  [36m>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"chakra-text css-0"[39m
+                    [36m>[39m
+                      [0mPush Notifications[0m
+                    [36m</p>[39m
+                    [36m<label[39m
+                      [33mclass[39m=[32m"chakra-switch css-16pgy8f"[39m
+                    [36m>[39m
+                      [36m<input[39m
+                        [33mclass[39m=[32m"chakra-switch__input"[39m
+                        [33mstyle[39m=[32m"border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; width: 1px; margin: -1px; padding: 0px; overflow: hidden; white-space: nowrap; position: absolute;"[39m
+                        [33mtype[39m=[32m"checkbox"[39m
+                        [33mvalue[39m=[32m""[39m
+                      [36m/>[39m
+                      [36m<span[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"chakra-switch__track css-14qxnv8"[39m
+                      [36m>[39m
+                        [36m<span[39m
+                          [33mclass[39m=[32m"chakra-switch__thumb css-0"[39m
+                        [36m/>[39m
+                      [36m</span>[39m
+                    [36m</label>[39m
+                  [36m</div>[39m
+                  [36m<button[39m
+                    [33maria-controls[39m=[32m"menu-list-:r4:"[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33maria-haspopup[39m=[32m"menu"[39m
+                    [33mclass[39m=[32m"chakra-button chakra-menu__menu...
+
+    [0m [90m 87 |[39m     [36mawait[39m waitFor(() [33m=>[39m expect(fetchUserSettings)[33m.[39mtoHaveBeenCalledWith(mockUserId))[33m;[39m
+     [90m 88 |[39m
+    [31m[1m>[22m[39m[90m 89 |[39m     [36mconst[39m emailSwitch [33m=[39m screen[33m.[39mgetByLabelText([32m'Email Notifications'[39m)[33m;[39m
+     [90m    |[39m                                [31m[1m^[22m[39m
+     [90m 90 |[39m     fireEvent[33m.[39mclick(emailSwitch)[33m;[39m
+     [90m 91 |[39m     expect(emailSwitch)[33m.[39mnot[33m.[39mtoBeChecked()[33m;[39m
+     [90m 92 |[39m   })[33m;[39m[0m
+
+      at Object.getElementError (node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getAllByLabelText (node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/queries/label-text.js:111:38)
+      at node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/.pnpm/@testing-library+dom@10.4.0/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByLabelText (app/my-profile/account-settings/page.early.test/AccountSettingsPage.early.test.tsx:89:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 3 passed, 5 total
+Snapshots:   0 total
+Time:        3.105 s
+Ran all test suites.

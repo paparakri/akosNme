@@ -4,7 +4,7 @@ import {
   Spinner, Button, useToast, Textarea
 } from '@chakra-ui/react';
 import { StarIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import { fetchNormalUser, fetchReviewById, addRemoveReview } from '@/app/lib/backendAPI';
+import { fetchNormalUser, fetchReviewById, deleteReview } from '@/app/lib/backendAPI';
 
 interface User {
   _id: string;
@@ -109,7 +109,7 @@ const ReviewComponent: React.FC<ReviewProps> = ({ reviews, currentUserId, onRevi
 
   const handleDelete = async (reviewId:string, clubId:string, userId:string) => {
     try {
-      await addRemoveReview(clubId, userId, {});
+      await deleteReview(reviewId, userId);
       setReviewList(prevList => prevList.filter(review => review._id !== reviewId));
       onReviewUpdate();
       toast({
