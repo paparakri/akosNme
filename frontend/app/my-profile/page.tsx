@@ -1,217 +1,240 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import {
   Box,
+  Flex,
   VStack,
   HStack,
-  Heading,
   Text,
-  Button,
+  Heading,
   Avatar,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  FormControl,
-  FormLabel,
-  Input,
-  useToast,
-  Badge,
-  Divider,
-  Flex,
-  Image,
   SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  Divider,
+  useColorModeValue,
+  Icon,
+  Image,
+  Button,
+  Input,
+  Textarea,
+  useToast,
 } from '@chakra-ui/react';
-import { EditIcon, StarIcon } from '@chakra-ui/icons';
+import { MdEmail, MdPhone, MdCalendarToday, MdLocationOn, MdEdit, MdSave, MdClose } from 'react-icons/md';
+import { fetchNormalUser, switchUsername2Id, updateNormalUser } from '../lib/backendAPI';
+import { getCurrentUser } from '../lib/userStatus';
+import SplashScreen from '../ui/splashscreen';
 
-// Mock data - replace with actual API calls
-const mockUserData = {
-  id: '123',
-  name: 'John Doe',
-  email: 'john@example.com',
-  avatar: 'https://bit.ly/broken-link',
-  reservations: [
-    { id: '1', clubName: 'Neon Nights', date: '2024-10-05', time: '22:00', guests: 4, status: 'Confirmed' },
-    { id: '2', clubName: 'Euphoria', date: '2024-10-12', time: '23:00', guests: 2, status: 'Pending' },
-    { id: '3', clubName: 'Starlight', date: '2024-09-28', time: '21:00', guests: 6, status: 'Completed' },
-  ],
-  followedClubs: [
-    { id: '1', name: 'Neon Nights', image: '/assets/images/club1.jpg' },
-    { id: '2', name: 'Euphoria', image: '/assets/images/club2.jpg' },
-    { id: '3', name: 'Starlight', image: '/assets/images/club3.jpg' },
-  ],
-  favoriteGenres: ['House', 'Techno', 'Hip-Hop'],
-  recentActivity: [
-    { id: '1', action: 'Followed', clubName: 'Neon Nights', date: '2024-09-30' },
-    { id: '2', action: 'Reviewed', clubName: 'Euphoria', date: '2024-09-25' },
-    { id: '3', action: 'Reserved', clubName: 'Starlight', date: '2024-09-20' },
-  ]
-};
+interface UserData {
+  username: string;
+  picturePath: string;
+  firstName: string;
+  lastName: string;
+  bio: string;
+  createdAt: string;
+  loyaltyPoints: number;
+  email: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+}
 
-const UserProfile = () => {
-  const [userData, setUserData] = useState(mockUserData);
-  const [isEditing, setIsEditing] = useState(false);
+const UserProfilePage: React.FC = () => {
+  const [user, setUser] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editedUser, setEditedUser] = useState<UserData | null>(null);
+
   const toast = useToast();
 
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const tabBgColor = useColorModeValue('gray.100', 'gray.700');
+
   useEffect(() => {
-    // Fetch user data here
-    // setUserData(fetchedData);
+    const fetchUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
+          throw new Error('No current user found');
+        }
+        const userId = await switchUsername2Id(currentUser.username);
+        const userData = await fetchNormalUser(userId);
+        setUser(userData);
+      } catch (err: unknown) {
+        console.error('Error fetching user data:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUser();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return 'N/A';
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+    setEditedUser(user);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setUserData(prev => ({ ...prev, [name]: value }));
+    setEditedUser(prev => prev ? { ...prev, [name]: value } : null);
   };
 
-  const handleSave = () => {
-    // Save updated user data here
-    // API call to update the data
-    setIsEditing(false);
-    toast({
-      title: "Profile updated.",
-      description: "Your profile has been successfully updated.",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Confirmed': return 'green';
-      case 'Pending': return 'yellow';
-      case 'Completed': return 'blue';
-      default: return 'gray';
+  const handleSave = async () => {
+    if (!editedUser) return;
+    try {
+      const updatedUser = await updateNormalUser(await switchUsername2Id(user?.username || ""), editedUser);
+      setUser(updatedUser);
+      setIsEditing(false);
+      toast({
+        title: "Profile updated",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      toast({
+        title: "Error updating profile",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
+  if (isLoading) return (
+    <Box marginY={'30vh'}>
+      <SplashScreen />
+    </Box>
+  );
+  if (error) return <Text color="red.500">Error: {error}</Text>;
+  if (!user) return <Text>No user data available</Text>;
+
   return (
-    <Box width={'80vw'} py={12} bg="white" boxShadow="xl" borderRadius="xl" px={8}>
-      <VStack spacing={8} align="stretch">
-        <HStack spacing={8} align="flex-start">
-          <Avatar size="2xl" name={userData.name} src={userData.avatar} />
-          <VStack align="start" spacing={4} flex={1}>
-            <Heading>{userData.name}</Heading>
-            <Text>{userData.email}</Text>
-            <Button leftIcon={<EditIcon />} onClick={() => setIsEditing(true)}>
-              Edit Profile
-            </Button>
+    <Box width="100%" maxWidth="1200px" mx="auto" px={4} my={20}>
+      {/* Cover Photo */}
+      <Box position="relative" h="300px" mb={16}>
+        <Image
+          src="profilePage.jpeg"
+          alt="Cover Photo"
+          objectFit="cover"
+          w="100%"
+          h="100%"
+          borderRadius="lg"
+        />
+        <Avatar
+          size="2xl"
+          name={user?.username}
+          src={user?.picturePath}
+          position="absolute"
+          bottom="-48px"
+          left="50%"
+          transform="translateX(-50%)"
+          border="4px solid white"
+        />
+      </Box>
+
+      <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
+        {/* User Name and Username */}
+        <Box bg={bgColor} borderRadius="lg" overflow="hidden" boxShadow="md" p={6} flex={{ md: 1 }}>
+          <VStack spacing={2} align="left">
+            {isEditing ? (
+              <>
+                <Input
+                  name="firstName"
+                  value={editedUser?.firstName || ''}
+                  onChange={handleInputChange}
+                  placeholder="First Name"
+                />
+                <Input
+                  name="lastName"
+                  value={editedUser?.lastName || ''}
+                  onChange={handleInputChange}
+                  placeholder="Last Name"
+                />
+              </>
+            ) : (
+              <Heading as="h2" size="xl">{`${user?.firstName} ${user?.lastName}`}</Heading>
+            )}
+            <Text color="gray.500" fontSize="lg">@{user?.username}</Text>
           </VStack>
-        </HStack>
+        </Box>
 
-        <Tabs>
-          <TabList>
-            <Tab>Dashboard</Tab>
-            <Tab>My Reservations</Tab>
-            <Tab>Followed Clubs</Tab>
-            <Tab>Account Settings</Tab>
-          </TabList>
-
-          <TabPanels>
-            <TabPanel>
-              <VStack align="stretch" spacing={6}>
-                <Heading size="md">Dashboard</Heading>
-                <Box>
-                  <Heading size="sm" mb={2}>Favorite Genres</Heading>
-                  <HStack>
-                    {userData.favoriteGenres.map((genre, index) => (
-                      <Badge key={index} colorScheme="purple">{genre}</Badge>
-                    ))}
-                  </HStack>
-                </Box>
-                <Box>
-                  <Heading size="sm" mb={2}>Recent Activity</Heading>
-                  <VStack align="stretch" spacing={2}>
-                    {userData.recentActivity.map((activity) => (
-                      <HStack key={activity.id} justify="space-between">
-                        <Text>{activity.action} {activity.clubName}</Text>
-                        <Text fontSize="sm" color="gray.500">{activity.date}</Text>
-                      </HStack>
-                    ))}
-                  </VStack>
-                </Box>
-              </VStack>
-            </TabPanel>
-            <TabPanel>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">My Reservations</Heading>
-                {userData.reservations.map((reservation) => (
-                  <Box key={reservation.id} p={4} borderWidth={1} borderRadius="md">
-                    <HStack justify="space-between">
-                      <VStack align="start" spacing={1}>
-                        <Heading size="sm">{reservation.clubName}</Heading>
-                        <Text>Date: {reservation.date}</Text>
-                        <Text>Time: {reservation.time}</Text>
-                        <Text>Guests: {reservation.guests}</Text>
-                      </VStack>
-                      <Badge colorScheme={getStatusColor(reservation.status)}>
-                        {reservation.status}
-                      </Badge>
-                    </HStack>
-                  </Box>
-                ))}
-              </VStack>
-            </TabPanel>
-            <TabPanel>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">Followed Clubs</Heading>
-                <SimpleGrid columns={3} spacing={4}>
-                  {userData.followedClubs.map((club) => (
-                    <Box key={club.id} borderWidth={1} borderRadius="md" overflow="hidden">
-                      <Image src={club.image} alt={club.name} objectFit="cover" h="150px" w="100%" />
-                      <Box p={3}>
-                        <Heading size="sm">{club.name}</Heading>
-                        <Button size="sm" mt={2} colorScheme="blue">View Profile</Button>
-                      </Box>
-                    </Box>
-                  ))}
-                </SimpleGrid>
-              </VStack>
-            </TabPanel>
-            <TabPanel>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">Account Settings</Heading>
-                <FormControl>
-                  <FormLabel>Name</FormLabel>
-                  <Input
-                    name="name"
-                    value={userData.name}
-                    onChange={handleInputChange}
-                    isReadOnly={!isEditing}
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    name="email"
-                    value={userData.email}
-                    onChange={handleInputChange}
-                    isReadOnly={!isEditing}
-                  />
-                </FormControl>
-                {isEditing && (
-                  <Button colorScheme="blue" onClick={handleSave}>
-                    Save Changes
-                  </Button>
-                )}
-                <Divider />
-                <Button colorScheme="red" variant="outline">
-                  Change Password
-                </Button>
-                <Button colorScheme="orange" variant="outline">
-                  Notification Settings
-                </Button>
-                <Button colorScheme="purple" variant="outline">
-                  Privacy Settings
-                </Button>
-              </VStack>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </VStack>
+        {/* User Info */}
+        <Box bg={bgColor} borderRadius="lg" overflow="hidden" boxShadow="md" flex={{ md: 2 }}>
+          <VStack align="stretch" spacing={6} p={6}>
+            {isEditing ? (
+              <Textarea
+                name="bio"
+                value={editedUser?.bio || ''}
+                onChange={handleInputChange}
+                placeholder="Bio"
+              />
+            ) : (
+              <Text fontSize="lg">{user?.bio}</Text>
+            )}
+            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={6}>
+              <Stat>
+                <StatLabel fontSize="md">Member Since</StatLabel>
+                <StatNumber>{formatDate(user?.createdAt || '')}</StatNumber>
+              </Stat>
+              <Stat>
+                <StatLabel fontSize="md">Loyalty Points</StatLabel>
+                <StatNumber>{user?.loyaltyPoints}</StatNumber>
+              </Stat>
+            </SimpleGrid>
+            <Divider />
+            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4}>
+              <HStack spacing={4}>
+                <Icon as={MdEmail} color="gray.500" boxSize={5} />
+                  <Text>{user?.email}</Text>
+              </HStack>
+              <HStack spacing={4}>
+                <Icon as={MdPhone} color="gray.500" boxSize={5} />
+                  <Text>{user?.phoneNumber}</Text>
+              </HStack>
+              <HStack spacing={4}>
+                <Icon as={MdCalendarToday} color="gray.500" boxSize={5} />
+                  <Text>Born on {formatDate(user?.dateOfBirth || '')}</Text>
+              </HStack>
+              <HStack spacing={4}>
+                <Icon as={MdLocationOn} color="gray.500" boxSize={5} />
+                <Text>Athens, Greece</Text>
+              </HStack>
+            </SimpleGrid>
+          </VStack>
+        </Box>
+      </Flex>
+      
+      {/* Edit/Save Button */}
+      <Box mt={6} textAlign="right">
+        {isEditing ? (
+          <>
+            <Button leftIcon={<MdSave />} colorScheme="green" onClick={handleSave} mr={2}>
+              Save Changes
+            </Button>
+            <Button leftIcon={<MdClose />} colorScheme="red" onClick={handleEditToggle}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <Button leftIcon={<MdEdit />} colorScheme="blue" onClick={handleEditToggle}>
+            Edit Profile
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 };
 
-export default UserProfile;
+export default UserProfilePage;

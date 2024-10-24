@@ -5,7 +5,6 @@ import {
   Flex,
   Text,
   IconButton,
-  Button,
   Stack,
   Collapse,
   Icon,
@@ -14,72 +13,113 @@ import {
   PopoverContent,
   useColorModeValue,
   useBreakpointValue,
-  useDisclosure
+  useDisclosure,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Button,
+  Avatar,
+  Divider,
 } from '@chakra-ui/react';
 
 import {
   HamburgerIcon,
   CloseIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
 } from '@chakra-ui/icons';
 
-import { useIsUserSignedIn, ProtectedRoute } from '../lib/userStatus';
+import { getCurrentUser, useIsUserSignedIn } from '../lib/userStatus';
 import { logout } from '../lib/authHelper';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+interface User {
+  _id: string;
+  username: string;
+  avatar?: string;
+}
+
+export default function Navbar() {
+  const [user, setUser] = useState<User>();
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    };
+    fetchUser();
+  }, []);
+
+  const { isOpen, onToggle } = useDisclosure();
+  const router = useRouter();
+  const isUserSignedIn = useIsUserSignedIn();
+
+  const handleButtonClick = (newPath:string) => {
+    router.push(newPath);
+  }
 
 
-export default function Navbar(){
+  const handleLogout = async () => {
+    await logout();
+    location.reload();
+  };
 
-    const { isOpen, onToggle } = useDisclosure();
-    const router = useRouter();
-
-    return (
-      <Box
-        position="fixed"
-        top={4}
-        left="50%"
-        transform="translateX(-50%)"
-        zIndex={1000}
-        width="90%"
-        maxWidth="1200px"
-        opacity={0.8}
+  return (
+    <Box
+      position="fixed"
+      top={4}
+      left="50%"
+      transform="translateX(-50%)"
+      zIndex={1000}
+      width="90%"
+      maxWidth="1200px"
+    >
+      <Flex
+        bg={useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')}
+        color={useColorModeValue('gray.600', 'white')}
+        minH={'50px'}
+        py={2}
+        px={4}
+        alignItems={'center'}
+        borderRadius="15"
+        backdropFilter="blur(5px)"
+        boxShadow="sm"
       >
         <Flex
-          bg={useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)')}
-          color={useColorModeValue('gray.600', 'white')}
-          minH={'50px'}
-          py={2}
-          px={4}
-          alignItems={'center'}
-          borderRadius="15"
-          backdropFilter="blur(5px)"
-          boxShadow="sm"
+          flex={{ base: 1, md: 'auto' }}
+          ml={{ base: -2 }}
+          display={{ base: 'flex', md: 'none' }}
         >
-            <Flex
-              flex={{ base: 1, md: 'auto' }}
-              ml={{ base: -2 }}
-              display={{ base: 'flex', md: 'none' }}>
-              <IconButton
-                onClick={onToggle}
-                icon={isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />}
-                variant={'ghost'}
-                aria-label={'Toggle Navigation'}
-              />
-            </Flex>
-            <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
-              <Text
-                textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
-                fontFamily={'heading'}
-                color={useColorModeValue('gray.800', 'white')}>
-                Logo
-              </Text>
-    
-              <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
-                <DesktopNav />
-              </Flex>
-            </Flex>
-            {!useIsUserSignedIn() ? (
+          <IconButton
+            onClick={onToggle}
+            icon={isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />}
+            variant={'ghost'}
+            aria-label={'Toggle Navigation'}
+          />
+        </Flex>
+        <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
+          <Text
+            textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
+            fontFamily={'heading'}
+            color={useColorModeValue('gray.800', 'white')}
+          >
+            Logo
+          </Text>
+
+          <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
+            <DesktopNav />
+          </Flex>
+        </Flex>
+
+        <Stack
+          flex={{ base: 1, md: 0 }}
+          justify={'flex-end'}
+          direction={'row'}
+          spacing={6}
+          alignItems={'center'}
+        >            
+          {!isUserSignedIn ? (
             <Stack
               flex={{ base: 1, md: 0 }}
               justify={'flex-end'}
@@ -88,46 +128,76 @@ export default function Navbar(){
               <Button as={'a'} fontSize={'sm'} fontWeight={400} variant={'link'} href={'/sign-in'}>
                 Sign In
               </Button>
-                <Button
-                  as={'a'}
-                  display={{ base: 'none', md: 'inline-flex' }}
-                  fontSize={'sm'}
-                  fontWeight={600}
-                  color={'white'}
-                  bg={'orange.400'}
-                  href={'/sign-up'}
-                  _hover={{
-                    bg: 'orange.300',
-                  }}>
-                  Sign Up
-                </Button>
-            </Stack>
-            ) : (
               <Button
+                as={'a'}
                 display={{ base: 'none', md: 'inline-flex' }}
                 fontSize={'sm'}
                 fontWeight={600}
                 color={'white'}
                 bg={'orange.400'}
-                onClick={async () => {
-                  await logout();
-                  location.reload();
-                }}
+                href={'/sign-up'}
                 _hover={{
                   bg: 'orange.300',
-                }}
-              >
-                Logout    
+                }}>
+                Sign Up
               </Button>
-            )
-            }
-          </Flex>
-    
-          <Collapse in={isOpen} animateOpacity>
-            <MobileNav />
-          </Collapse>
-        </Box>
-      )
+            </Stack>
+          ) : (
+            <Menu placement='bottom-end'>
+              <MenuButton
+                as={Button}
+                verticalAlign={'center'}
+                variant='ghost'
+                display='flex'
+                alignItems='end'
+                shadow={'xl'}
+                px={2}
+                py={1}
+                borderWidth={1}
+                borderRadius='full'
+              >
+                <HamburgerIcon m={2} />
+                <Avatar size='sm' name={user?.username || 'User'} src={user?.avatar} />
+              </MenuButton>
+              <MenuList
+                bg={useColorModeValue('white', 'gray.800')}
+                borderColor={useColorModeValue('gray.200', 'gray.700')}
+              >
+                <MenuItem onClick={() => handleButtonClick('/my-profile')}>
+                  <Text fontStyle="italic">
+                    Show Profile
+                  </Text>
+                </MenuItem>
+                <Divider borderColor="gray.300" borderWidth="1px" my={1} />
+                <MenuItem onClick={() => handleButtonClick('/my-profile/bookings')}>
+                  Bookings
+                </MenuItem>
+                <MenuItem>
+                  Messages
+                </MenuItem>
+                <MenuItem>
+                  Favorite Clubs
+                </MenuItem>
+                <Divider borderColor="gray.300" borderWidth="1px" my={1} />
+                <MenuItem onClick={() => handleButtonClick('my-profile/account-settings')}>
+                  Account Settings
+                </MenuItem>
+                <Divider borderColor="gray.300" borderWidth="1px" my={1} />
+                <MenuItem onClick={handleLogout}>
+                  <Text>
+                    Log out
+                  </Text>
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          )}
+        </Stack>
+      </Flex>
+      <Collapse in={isOpen} animateOpacity>
+        <MobileNav />
+      </Collapse>
+    </Box>
+  );
 }
 
 const DesktopNav = () => {

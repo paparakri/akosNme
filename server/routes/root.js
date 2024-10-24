@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const { register, login, loginClub } = require('../controllers/auth.js');
 const { getReviewById } = require('../controllers/reviews');
-const { postReservation } = require('../controllers/reservations');
+const { addReservation, removeReservation } = require('../controllers/reservations');
 
 router.get('^/$|/index(.html)?', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'))
@@ -17,7 +17,8 @@ router.route('/review/:id')
     .get(getReviewById);
 
 router.route('/reservations')
-    .post(postReservation);
+    .post(addReservation)
+    .delete(removeReservation);
 
 router.route('/ClubLogin')
     .post(loginClub);

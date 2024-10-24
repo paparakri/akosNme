@@ -37,7 +37,7 @@ const Login = () => {
       console.error(e);
     }
     
-    //router.push('/');
+    router.push('/');
   }
 
    return(

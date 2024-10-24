@@ -18,7 +18,6 @@ const ReservationSchema = new mongoose.Schema({
     },
     event: {
         type: ObjectId,
-        required: true,
         min: 3,
         max: 50
     },
@@ -26,7 +25,7 @@ const ReservationSchema = new mongoose.Schema({
         type: Object
     },
     date: {
-        type: Date,
+        type: String,
         required: true
     },
     startTime: {

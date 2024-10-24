@@ -20,6 +20,7 @@ import { FiHome, FiTable, FiDollarSign, FiSettings, FiSearch, FiBell, FiUser } f
 // Import your components here
 import Dashboard from './dashboard';
 import Profile from './profile';
+import Events from './events';
 import { DragDropSeatingCanvas } from '../dragDropSeating';
 import { jwtDecode } from 'jwt-decode';
 import { fetchClubByName } from '@/app/lib/backendAPI';
@@ -115,9 +116,9 @@ const Layout = () => {
           return <Dashboard />;
         case 'tables':
           return <DragDropSeatingCanvas id={clubData._id} />;
-        /*case 'billing':
-          return <Billing />;
-        case 'settings':
+        case 'events':
+          return <Events />;
+        /*case 'settings':
           return <Settings />;*/
         case 'profile':
           return <Profile />;
@@ -166,10 +167,10 @@ const Layout = () => {
             </MenuItem>
             <MenuItem 
               icon={FiDollarSign} 
-              onClick={() => setActivePage('billing')}
-              isActive={activePage === 'billing'}
+              onClick={() => setActivePage('events')}
+              isActive={activePage === 'events'}
             >
-              Billing
+              Events
             </MenuItem>
             <MenuItem 
               icon={FiUser} 
@@ -190,34 +191,6 @@ const Layout = () => {
 
         {/* Main content area */}
         <Box ml={{ base: 0, md: 60 }} p="4" w="full" bg={'white'}>
-          {/* Header */}
-          <Flex
-            as="header"
-            align="center"
-            justify="space-between"
-            w="full"
-            px="4"
-            bg="gray.50"
-            shadow={'lg'}
-            h="20"
-          >
-            <InputGroup w="96" maxW="96">
-              <InputLeftElement pointerEvents="none">
-                <Icon as={FiSearch} color="gray.400" />
-              </InputLeftElement>
-              <Input type="text" placeholder="Search..." />
-            </InputGroup>
-
-            <Flex align="center">
-              <IconButton
-                size="lg"
-                variant="ghost"
-                aria-label="open menu"
-                icon={<Icon as={FiBell} color="gray.400" />}
-              />
-              <Avatar size="sm" ml="4" />
-            </Flex>
-          </Flex>
 
           {/* Page Content */}
           <Box mt="8">

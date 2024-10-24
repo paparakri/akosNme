@@ -1,5 +1,34 @@
 const mongoose =  require('mongoose');
 
+const initialSettings = {
+    notifications: {
+        email: true,
+        push: false,
+        choice: {
+            clubToggle: true,
+            friendToggle: false,
+            artistToggle: true,
+            timeBefore: 30, // Example: 30 minutes before
+            timeToggle: true,
+        },
+    },
+    security: {
+        twoFactor: false,
+    },
+    privacy: {
+        shareData: true,
+        publicProfile: false,
+        shareLocation: true,
+        shareEmail: false,
+        sharePhone: false,
+        shareReservations: true,
+    },
+    themeAccessibility: {
+        theme: 'light', // Options: light, dark, system
+        accessibility: 'normal', // Options: normal, high, extreme
+    },
+  };
+
 const NormalUserSchema = new mongoose.Schema(
     {
         username: {
@@ -51,11 +80,11 @@ const NormalUserSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
-        favGenres: {
+        favoriteGenres: {
             type: Array,
             default: []
         },
-        reservation: {
+        reservations: {
             type: Array,
             default: []
         },
@@ -63,8 +92,9 @@ const NormalUserSchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
-        notifPreferences: {
-            type: Object
+        accountSettings: {
+            type: Object,
+            default: initialSettings
         },
         picturePath: {
             type: String,
@@ -83,6 +113,10 @@ const NormalUserSchema = new mongoose.Schema(
             default: []
         },
         yourReviews: {
+            type: Array,
+            default: []
+        },
+        favoriteClubs: {
             type: Array,
             default: []
         }

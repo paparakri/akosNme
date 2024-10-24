@@ -23,7 +23,7 @@ router.route('/:user/events')
     .get(getEvents)
     .post(postEvent)
     .put(updateEvent)
-    .delete(deleteEvent); //TODO: implement postEvent
+    .delete(deleteEvent);
 
 router.route('/:user/followers')
     .get(getFollowers);

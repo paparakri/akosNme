@@ -7,6 +7,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import pandas as pd
 import certifi
+from bson import ObjectId
 
 # Perform collaborative filtering using Non-Negative Matrix Factorization (NMF)
 def collaborative_filtering(df_reviews):
@@ -88,6 +89,27 @@ def get_recommendations():
 
 def calculate_hottest(df_clubs, df_reviews, location, limit=10):
     try:
+        if df_reviews.empty:
+            print("There are no reviews for any clubs!")
+            # Return clubs in their current order
+            local_clubs = df_clubs[df_clubs['location'] == location].copy()
+            if local_clubs.empty:
+                print(f"No clubs found for location: {location}")
+                return []
+            
+            result_df = local_clubs[['_id', 'displayName', 'username']].head(limit)
+            result_df['review_count'] = 0
+            result_df['rating'] = local_clubs['rating'].fillna(0)
+            result_df['hotness_score'] = 0
+            
+            # Convert ObjectId to string and handle other non-serializable types
+            for column in result_df.columns:
+                result_df[column] = result_df[column].apply(lambda x: json_serialize(x) if isinstance(x, ObjectId) else x)
+                if result_df[column].dtype == 'object':
+                    result_df[column] = result_df[column].apply(lambda x: json.dumps(x) if isinstance(x, (list, dict)) else x)
+            
+            return result_df.to_dict('records')
+
         # Filter clubs by location
         local_clubs = df_clubs[df_clubs['location'] == location].copy()
         if local_clubs.empty:
@@ -152,6 +174,13 @@ def calculate_hottest(df_clubs, df_reviews, location, limit=10):
 
         # Convert to list of dictionaries
         result = result_df.to_dict('records')
+
+        # Before returning the result, convert ObjectId to string
+        for item in result:
+            for key, value in item.items():
+                if isinstance(value, ObjectId):
+                    item[key] = str(value)
+
         return result
     except Exception as e:
         print(f"Error in calculate_hottest: {str(e)}")
@@ -173,10 +202,15 @@ def get_featured_clubs():
         
         featured_clubs = calculate_hottest(df_clubs, df_reviews, location)
 
-        return jsonify({'featuredClubs': featured_clubs})
+        return json.dumps({'featuredClubs': featured_clubs}, default=json_serialize), 200, {'Content-Type': 'application/json'}
     except Exception as e:
         print(f"Error in get_featured_clubs: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+def json_serialize(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 if __name__ == '__main__':
     app.run(debug=True)
