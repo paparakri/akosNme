@@ -16,6 +16,7 @@ import {
   NumberDecrementStepper,
   Textarea,
 } from '@chakra-ui/react';
+import LocationInput from '@/app/ui/locationSelector';
 
 interface Form2Props {
   formData: any;
@@ -24,10 +25,10 @@ interface Form2Props {
 
 const Form2: React.FC<Form2Props> = ({ formData, setFormData }) => {
   const handleChange = (e: any) => {
-    console.log(e);
+    //console.log(e);
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
-    console.log(formData);
+    //console.log(formData);
   };
 
   const handleCheckboxChange = (name: string, values: (string | number)[]) => {
@@ -38,16 +39,13 @@ const Form2: React.FC<Form2Props> = ({ formData, setFormData }) => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
+  //console.log(formData);
+
   return (
     <VStack spacing={4} align="stretch">
         <FormControl isRequired>
         <FormLabel>Location</FormLabel>
-        <Input
-            name="location"
-            value={formData.location || ''}
-            onChange={handleChange}
-            placeholder="Enter your club's address"
-        />
+        <LocationInput formData={formData} setFormData={setFormData} />
         </FormControl>
         <FormControl isRequired>
         <FormLabel>Capacity</FormLabel>

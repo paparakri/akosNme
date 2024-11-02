@@ -3,6 +3,7 @@ const NormalUser = require('../models/normalUser');
 const Reservation = require('../models/reservation');
 const Event = require('../models/event');
 const mongoose = require('mongoose');
+const { createFeedItem } = require('../helpers/feedItemCreator');
 
 // POST
 const addReservation = async (req, res) => {
@@ -11,7 +12,7 @@ const addReservation = async (req, res) => {
         console.log(req.body);
 
         const userId = req.body.user;
-        const { club, event, tableNumber, date, startTime, endTime, numOfGuests, specialRequests, minPrice } = req.body;
+        const { club, event, tableNumber, date, startTime, numOfGuests, specialRequests, minPrice } = req.body;
 
         console.log(`Searching for user with ID: ${userId}`);
         const normalUser = await NormalUser.findById(userId);
@@ -46,19 +47,15 @@ const addReservation = async (req, res) => {
         // Parse date and time
         const [year, month, day] = date.split('-').map((x, i) => (i === 0 ? parseInt(x) : parseInt(x).toString().padStart(2, '0')));
         const [startHour, startMinute] = startTime.split(':').map(x => parseInt(x).toString().padStart(2, '0'));
-        let [endHour, endMinute] = endTime.split(':').map(x => parseInt(x).toString().padStart(2, '0'));
 
         console.log(`Parsed date: ${year}-${month}-${day}`);
         console.log(`Parsed start time: ${startHour}:${startMinute}`);
-        console.log(`Parsed end time: ${endHour}:${endMinute}`);
 
         const reservationDate = `${day}-${month}-${year}`;
         const reservationStartTime = new Date(`${year}-${month}-${day}T${startHour}:${startMinute}:00`);
-        const nextDay = endHour < startHour;
-        const reservationEndTime = new Date(`${year}-${month}-${nextDay ? parseInt(day)+1 : day}T${endHour}:${endMinute}:00`);
 
         // Validate parsed dates
-        if ( isNaN(reservationStartTime.getTime()) || isNaN(reservationEndTime.getTime()) ) {
+        if ( isNaN(reservationStartTime.getTime()) ) {
             return res.status(400).json({ message: "Invalid date or time format." });
         }
 
@@ -69,11 +66,30 @@ const addReservation = async (req, res) => {
             table: tableNumber || undefined,
             date: reservationDate,
             startTime: reservationStartTime,
-            endTime: reservationEndTime,
             numOfGuests: Number(numOfGuests),
             status: 'pending',
             specialRequests: specialRequests || undefined,
             minPrice: Number(minPrice)
+        });
+
+        await createFeedItem({
+            actor: {
+                userId: normalUser._id,
+                userType: 'normal',
+                displayName: normalUser.firstName + ' ' + normalUser.lastName,
+                picturePath: normalUser.picturePath
+            },
+            verb: 'made_reservation',
+            object: {
+                targetId: newReservation._id,
+                targetType: 'reservation',
+                content: {
+                    date: newReservation.date,
+                    clubName: clubUser.displayName,
+                    clubUsername: clubUser.username,
+                    specialRequests: newReservation.specialRequests
+                }
+            }
         });
 
         await NormalUser.updateOne(
@@ -158,7 +174,7 @@ const getReservations = async (req, res) => {
 const updateReservation = async (req, res) => {
     try {
         const userId = req.params.id;
-        const { reservationId, table, date, startTime, endTime, numOfGuests, specialRequests, minPrice } = req.body;
+        const { reservationId, table, date, startTime, numOfGuests, specialRequests, minPrice } = req.body;
 
         const reservation = await Reservation.findById(reservationId);
 
@@ -172,7 +188,7 @@ const updateReservation = async (req, res) => {
 
         const updatedReservation = await Reservation.findByIdAndUpdate(
             reservationId,
-            { table, date, startTime, endTime, numOfGuests, specialRequests, minPrice },
+            { table, date, startTime, numOfGuests, specialRequests, minPrice },
             { new: true }
         );
 

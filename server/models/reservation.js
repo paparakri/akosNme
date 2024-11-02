@@ -32,10 +32,6 @@ const ReservationSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    endTime: {
-        type: Date,
-        required: true
-    },
     numOfGuests: {
         type: Number,
         required: true

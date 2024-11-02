@@ -47,6 +47,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from '@chakra-ui/react';
 import ChakraDatePicker from '@/app/ui/datepicker';
+import CompactEventCarousel from '@/app/ui/compactEventCarousel';
 
 interface ErrorsType {
   date: string;
@@ -80,6 +81,7 @@ const ReservationPage = () => {
   });
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isReservationComplete, setIsReservationComplete] = useState(false);
+  const [clubId, setClubId] = useState('');
   const [isMobile] = useMediaQuery("(max-width: 48em)");
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -105,6 +107,7 @@ const ReservationPage = () => {
         if (clubName) {
           const club = await fetchClubByName(clubName);
           setClubDisplayName(club.displayName)
+          setClubId(club._id);
           setReservation(prev => ({ ...prev, club: club._id }));
         }
       } catch (error) {
@@ -130,7 +133,6 @@ const ReservationPage = () => {
     const newErrors: ErrorsType = {date:"", startTime: "", endTime: "", numOfGuests:""};
     if (!reservation.date) newErrors.date = 'Date is required';
     if (!reservation.startTime) newErrors.startTime = 'Start time is required';
-    if (!reservation.endTime) newErrors.endTime = 'End time is required';
     if (reservation.numOfGuests < 1) newErrors.numOfGuests = 'Number of guests must be at least 1';
     setErrors(newErrors);
     return Object.keys(newErrors).every(key => newErrors[key as keyof ErrorsType] === "");
@@ -167,6 +169,17 @@ const ReservationPage = () => {
       });
     }
   };
+
+  const autofillEvent = (date: Date, startTime: Date, endTime: string) => {
+    console.log(`Date: ${date.toISOString().split('T')[0]}, Start Time: ${startTime.toLocaleTimeString()}, End Time: ${endTime}`);
+    setReservation(prev => ({
+      ...prev,
+      date: date.toISOString().split('T')[0],
+      startTime: startTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      //endTime: endTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    }));
+    console.log(reservation);
+  }
 
   const resetReservation = () => {
     setReservation({
@@ -211,7 +224,6 @@ const ReservationPage = () => {
       <SimpleGrid columns={2} spacing={4}>
         <Text><strong>Date:</strong> {reservation.date}</Text>
         <Text><strong>Start Time:</strong> {reservation.startTime}</Text>
-        <Text><strong>End Time:</strong> {reservation.endTime}</Text>
         <Text><strong>Number of Guests:</strong> {reservation.numOfGuests}</Text>
         {reservation.tableNumber && <Text><strong>Table Number:</strong> {reservation.tableNumber}</Text>}
       </SimpleGrid>
@@ -291,16 +303,6 @@ const ReservationPage = () => {
                     name="startTime"
                     type="time"
                     value={reservation.startTime}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl isRequired isInvalid={errors.endTime !== ""}>
-                  <FormLabel>End Time</FormLabel>
-                  <Input
-                    name="endTime"
-                    type="time"
-                    value={reservation.endTime}
                     onChange={handleInputChange}
                   />
                 </FormControl>
@@ -423,23 +425,10 @@ const ReservationPage = () => {
             </Box>
             
             <Box bg={bgColor} p={6} borderRadius="lg" boxShadow="xl" border="1px" borderColor={borderColor}>
-              <Heading as="h3" size="md" mb={4}>
+              <Heading as="h3" size="md">
                 Upcoming Events
               </Heading>
-              <VStack align="start" spacing={3}>
-                <HStack>
-                  <CalendarIcon />
-                  <Text>Fri, Oct 20 - Ladies Night: Free entry for ladies before 11 PM</Text>
-                </HStack>
-                <HStack>
-                  <CalendarIcon />
-                  <Text>Sat, Oct 21 - DJ Spinner Live: International guest DJ performance</Text>
-                </HStack>
-                <HStack>
-                  <CalendarIcon />
-                  <Text>Thu, Oct 26 - Throwback Thursday: Best of 80s and 90s hits all night</Text>
-                </HStack>
-              </VStack>
+              <CompactEventCarousel clubId={clubId} autofillFunction={autofillEvent} />
             </Box>
           </VStack>
           </SimpleGrid>

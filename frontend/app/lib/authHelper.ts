@@ -68,8 +68,10 @@ export const loginNormalUser = async (data: any) => {
         localStorage.setItem('userType', res.data.userType);
 
         console.log('token saved in localStorage because of logging in');
+        return res;
     } catch (error) {
         console.error("Error submitting form:", error);
+        return error;
     }
 }
 

@@ -71,6 +71,14 @@ const NormalUserSchema = new mongoose.Schema(
             type: Array,
             default: []
         },
+        friendRequests: {
+            type: Array,
+            default: []
+        },
+        sentFriendRequests: {
+            type: Array,
+            default: []
+        },
         phoneNumber: {
             type: String,
             required: true,

@@ -200,11 +200,20 @@ const AccountSettingsPage = () => {
   }
 
   return (
-    <Flex minH="100vh" bg={bgColor} my={8} boxShadow={'lg'} borderRadius={50} p={8}>
-      {/* Sidebar */}
-      <Box w="10vw" borderRight="1px" borderColor="gray.200">
-        <VStack align="stretch" spacing={0} mt={4} position={'fixed'}>
-          <Box p={4}><Heading size="lg">TuneSync</Heading></Box>
+    <Box display="flex" justifyContent="center" alignItems="center">
+    
+    <Flex
+        position="fixed" // Make the Flex fixed
+        top={0} // Align to the top
+        left={0} // Align to the left
+        minH="100vh" // Full height
+        bg={bgColor}
+        boxShadow={'lg'}
+        borderRadius={0} // No border radius for fixed sidebar
+        p={4} // Padding
+        zIndex={1000} // Ensure it stays above other content
+      >
+        <VStack align="stretch" spacing={0}>
           <MenuItem onClick={() => scrollToSection(notificationsRef)}>Notifications</MenuItem>
           <MenuItem onClick={() => scrollToSection(securityRef)}>Security</MenuItem>
           <MenuItem onClick={() => scrollToSection(privacyRef)}>Privacy</MenuItem>
@@ -213,7 +222,9 @@ const AccountSettingsPage = () => {
           <MenuItem onClick={() => scrollToSection(reservationHistoryRef)}>Reservation History</MenuItem>
           <MenuItem onClick={() => scrollToSection(themeAccessibilityRef)}>Theme & Accessibility</MenuItem>
         </VStack>
-      </Box>
+      </Flex>
+
+    <Flex minH="100vh" bg={bgColor} my={8} boxShadow={'lg'} borderRadius={50} p={8} alignSelf={'center'} maxW={'80vw'}>
 
       {/* Main content */}
       <Box flex={1} overflowY="auto" w={'50vw'} ref={notificationsRef}>
@@ -406,6 +417,7 @@ const AccountSettingsPage = () => {
         </Container>
       </Box>
     </Flex>
+    </Box>
   );
 };
 
