@@ -1,4 +1,4 @@
-# TuneSync - Nightclub Management System
+#Nightclub Management System
 
 TuneSync is a comprehensive web application for managing nightclub operations, reservations, and customer engagement. Built with modern web technologies, it provides a seamless experience for both club owners and customers.
 
