@@ -26,14 +26,23 @@ import {
   ModalContent,
   ModalHeader,
   ModalCloseButton,
-  ModalBody
+  ModalBody,
+  Image,
+  IconButton,
+  Progress,
+  useToast
 } from '@chakra-ui/react';
 import { jwtDecode } from 'jwt-decode';
 import SplashScreen from '../splashscreen';
-import { fetchClubByName, updateClub } from '@/app/lib/backendAPI';
+import { fetchClubByName, updateClub, uploadImage } from '@/app/lib/backendAPI';
 import { OpeningHoursInfo, OpeningHoursPicker, openingHoursToString } from '../openHoursPicker';
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from '@chakra-ui/icons';
+import LocationSelector from '../locationSelector';
 
+type ImageFile = {
+  file: File;
+  preview: string;
+};
 
 type ContactInfo = {
   email: string;
@@ -52,7 +61,8 @@ type ClubFormData = {
   email: string;
   displayName: string;
   description: string;
-  location: string;
+  address: string;
+  location: Object;
   capacity: number | string;
   openingHours: {
     [key: string]: {
@@ -82,15 +92,18 @@ const ProfilePage = () => {
   const bgColor = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
+  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [clubData, setClubData] = useState<ClubFormData>({
     _id: '',
+    location: {},
     username: 'clubuser123',
     email: 'club@example.com',
     displayName: 'Awesome Club',
     description: 'The best club in town with amazing music and atmosphere.',
-    location: '123 Party Street, Clubville, CV 12345',
+    address: '123 Party Street, Clubville, CV 12345',
     capacity: 500,
     openingHours: {
         Monday: { isOpen: true, open: '09:00', close: '17:00' },
@@ -135,6 +148,50 @@ const ProfilePage = () => {
 
     console.log("Use Effect print: "); console.log(openingHoursToString(clubData.openingHours));
   }, []);
+
+
+  const ImagePreviews = () => (
+    <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={4}>
+      {selectedImages.map((image, index) => (
+        <Box key={index} position="relative">
+          <Image
+            src={image.preview}
+            alt={`Preview ${index + 1}`}
+            boxSize="150px"
+            objectFit="cover"
+            borderRadius="md"
+          />
+          <IconButton
+            aria-label="Remove image"
+            icon={<CloseIcon />}
+            size="sm"
+            position="absolute"
+            top={2}
+            right={2}
+            onClick={() => {
+              URL.revokeObjectURL(image.preview);
+              setSelectedImages(prev => prev.filter((_, i) => i !== index));
+            }}
+          />
+        </Box>
+      ))}
+    </SimpleGrid>
+  );
+
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      // Revoke existing preview URLs
+      selectedImages.forEach(image => URL.revokeObjectURL(image.preview));
+  
+      // Create new image files array with previews
+      const newImages: ImageFile[] = Array.from(e.target.files).map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+      setSelectedImages(newImages);
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string,
@@ -200,10 +257,57 @@ const ProfilePage = () => {
     }));
   };
 
-  const handleSave = () => {
-    const res = updateClub(clubData._id, clubData);
-    console.log('Updated club data:', clubData);
-    // Add logic to save the data and show a success message
+
+  const toast = useToast();
+
+  const handleSave = async () => {
+    try {
+      setUploadProgress(0);
+      
+      // First, upload all images if any are selected
+      const uploadedImageUrls: string[] = [];
+      
+      if (selectedImages.length > 0) {
+        for (let i = 0; i < selectedImages.length; i++) {
+          const image = selectedImages[i];
+          // Assuming you have an uploadImage function that returns the URL
+          const imageUrl = (await uploadImage(image.file, 'profilePics')).downloadURL;
+          uploadedImageUrls.push(imageUrl);
+          
+          // Update progress
+          setUploadProgress(((i + 1) / selectedImages.length) * 100);
+        }
+      }
+
+      // Update club data with new image URLs
+      const updatedClubData = {
+        ...clubData,
+        images: uploadedImageUrls, // Add this field to your club data model
+      };
+
+      // Update club information
+      const res = await updateClub(clubData._id, updatedClubData);
+      console.log('Updated club data:', res);
+
+      // Show success message
+      toast({
+        title: "Profile updated",
+        description: "Your club profile has been successfully updated.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "There was an error updating your profile. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   return !isLoading ? (
@@ -227,7 +331,7 @@ const ProfilePage = () => {
             <Text fontSize="xl" fontWeight="bold">
               {clubData.displayName}
             </Text>
-            <Text color="gray.500">{clubData.location}</Text>
+            <Text color="gray.500">{clubData.address}</Text>
           </VStack>
           <Divider my={6} />
           <VStack spacing={3} align="stretch">
@@ -269,7 +373,7 @@ const ProfilePage = () => {
               </FormControl>
               <FormControl>
                 <FormLabel>Location</FormLabel>
-                <Input name="location" value={clubData.location} onChange={handleInputChange} />
+                <LocationSelector formData={clubData} setFormData={setClubData} />
               </FormControl>
               <FormControl>
                 <FormLabel>Capacity</FormLabel>
@@ -383,7 +487,39 @@ const ProfilePage = () => {
             
             <FormControl>
               <FormLabel>Club Images</FormLabel>
-              <Input type="file" accept="image/*" multiple />
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                display="none"
+                id="image-upload"
+              />
+              <Button
+                as="label"
+                htmlFor="image-upload"
+                cursor="pointer"
+                colorScheme="blue"
+                mb={4}
+              >
+                Select Images
+              </Button>
+              
+              {uploadProgress > 0 && (
+                <Progress
+                  value={uploadProgress}
+                  size="sm"
+                  colorScheme="blue"
+                  mb={4}
+                />
+              )}
+              
+              {selectedImages.length > 0 && (
+                <Box mt={4}>
+                  <Text mb={2}>Selected Images:</Text>
+                  <ImagePreviews />
+                </Box>
+              )}
             </FormControl>
             
             <Button colorScheme="orange" onClick={handleSave}>

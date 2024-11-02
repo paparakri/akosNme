@@ -31,10 +31,15 @@ const ClubUserSchema = new mongoose.Schema(
 
         },
         location: {
-            type: String,
-            required: true,
-            min: 3,
-            max: 50
+            type: {
+                type: String, // 'Point'
+                enum: ['Point'], // Specify that this is a Point
+                required: true
+            },
+            coordinates: {
+                type: [Number], // [longitude, latitude]
+                required: true
+            }
         },
         rating: {
             type: Number,

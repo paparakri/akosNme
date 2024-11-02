@@ -1,417 +1,400 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, Layer, Stage, Transformer } from 'react-konva';
+import { Stage, Layer, Image, Transformer } from 'react-konva';
+import {
+  Box,
+  Button,
+  VStack,
+  HStack,
+  Text,
+  useColorModeValue,
+  Heading,
+  Input,
+  FormControl,
+  FormLabel,
+  Select,
+  useToast,
+  IconButton,
+  Card,
+  CardBody,
+  Badge,
+} from '@chakra-ui/react';
 import useImage from 'use-image';
-import { Button, Text, Flex, useToast, VStack, Heading, FormControl, FormLabel, Input, Textarea, NumberInput, NumberInputField, HStack, Box, Select, Divider, useColorModeValue, Badge, SimpleGrid } from '@chakra-ui/react';
-import Konva from 'konva';
+import { Save, Plus, Undo, Redo, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import { fetchClubInfo, saveDataLayout } from '../lib/backendAPI';
-import { AddIcon, CheckIcon, CloseIcon, DeleteIcon, EditIcon, RepeatIcon, StarIcon } from '@chakra-ui/icons';
-import { SaveIcon } from 'lucide-react';
 
 type Table = {
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    name: string,
-    type: string,
-    people: number,
-    isReserved: boolean
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  name: string;
+  type: string;
+  people: number;
+  isReserved: boolean;
 }
+
 type TableList = Table[];
 
-interface StyledKonvaCanvasProps {
-    tableList: Table[];
-    selectedId: number | null;
-    setSelectedId: (id: number) => void;
-    updateTable: (index: number, newProps: Partial<Table>) => void;
-  }
-
 interface TableImageProps {
-    isSelected: boolean;
-    name: string,
-    type: string,
-    people: number,
-    isReserved: boolean,
-    onSelect: () => void;
-    onChange: (newProps: { x: number; y: number; width: number; height: number }) => void;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+  isSelected: boolean;
+  onSelect: () => void;
+  onChange: (newProps: { x: number; y: number; width: number; height: number }) => void;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-const TableImage: React.FC<TableImageProps> = ({ isSelected, onSelect, onChange, x, y, width, height }) => {
-    const imageRef = useRef<Konva.Image>(null);
-    const trRef = useRef<Konva.Transformer>(null);
-    const [image] = useImage('/table1.png');
-  
-    useEffect(() => {
-      if (isSelected && trRef.current && imageRef.current) {
-        trRef.current.nodes([imageRef.current]);
-        trRef.current.getLayer()?.batchDraw();
-      }
-    }, [isSelected]);
-  
-    return (
-      <>
-        <Image
-          image={image}
-          onClick={onSelect}
-          onTap={onSelect}
-          ref={imageRef}
-          width={width}
-          height={height}
-          x={x}
-          y={y}
-          draggable
-          onDragEnd={(e) => {
+const TableImage: React.FC<TableImageProps> = ({
+  isSelected,
+  onSelect,
+  onChange,
+  x,
+  y,
+  width,
+  height,
+}) => {
+  const imageRef = useRef(null);
+  const trRef = useRef(null);
+  const [image] = useImage('/table1.png');
+
+  useEffect(() => {
+    if (isSelected && trRef.current && imageRef.current) {
+      trRef.current.nodes([imageRef.current]);
+      trRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      <Image
+        image={image}
+        onClick={onSelect}
+        onTap={onSelect}
+        ref={imageRef}
+        width={width}
+        height={height}
+        x={x}
+        y={y}
+        draggable
+        onDragEnd={(e) => {
+          onChange({
+            x: e.target.x(),
+            y: e.target.y(),
+            width,
+            height
+          });
+        }}
+        onTransformEnd={() => {
+          const node = imageRef.current;
+          if (node) {
+            const scaleX = node.scaleX();
+            const scaleY = node.scaleY();
+            node.scaleX(1);
+            node.scaleY(1);
             onChange({
-              x: e.target.x(),
-              y: e.target.y(),
-              width,
-              height
+              x: node.x(),
+              y: node.y(),
+              width: Math.max(50, node.width() * scaleX),
+              height: Math.max(50, node.height() * scaleY),
             });
+          }
+        }}
+      />
+      {isSelected && (
+        <Transformer
+          ref={trRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            return newBox.width < 50 || newBox.height < 50 ? oldBox : newBox;
           }}
-          onTransformEnd={() => {
-            const node = imageRef.current;
-            if (node) {
-              const scaleX = node.scaleX();
-              const scaleY = node.scaleY();
-              
-              // Reset scale to 1 to avoid compounding scales
-              node.scaleX(1);
-              node.scaleY(1);
-              
-              onChange({
-                x: node.x(),
-                y: node.y(),
-                width: Math.max(5, node.width() * scaleX),
-                height: Math.max(5, node.height() * scaleY),
-              });
-            }
-          }}
+          anchorFill="#F6AD55"
+          anchorStroke="#C05621"
+          anchorSize={8}
+          anchorCornerRadius={2}
         />
-        {isSelected && (
-          <Transformer
-            ref={trRef}
-            boundBoxFunc={(oldBox, newBox) => {
-              // Limit resize
-              if (newBox.width < 5 || newBox.height < 5) {
-                return oldBox;
-              }
-              return newBox;
-            }}
-          />
-        )}
-      </>
-    );
+      )}
+    </>
+  );
+};
+
+interface EditTableInfoProps {
+  table: Table;
+  onSave: (updates: Partial<Table>) => void;
+}
+
+const EditTableInfo: React.FC<EditTableInfoProps> = ({ table, onSave }) => {
+  const handleChange = (field: keyof Table, value: any) => {
+    onSave({ [field]: value });
   };
 
-  interface EditTableInfoProps {
-    table: Table;
-    onSave: (updatedTable: Table) => void;
-  }
-  
-  const EditTableInfo: React.FC<EditTableInfoProps> = ({ table, onSave }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [tableData, setTableData] = useState<Table>(table);
-  
-    useEffect(() => {
-      setTableData(table);
-    }, [table]);
-  
-    const handleSave = () => {
-      onSave(tableData);
-      setIsEditing(false);
-    };
-  
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = e.target;
-      setTableData(prev => ({
-        ...prev,
-        [name]: name === 'people' ? parseInt(value) : name === 'isReserved' ? value === 'yes' : value
-      }));
-    };
-  
-    const bgColor = useColorModeValue('white', 'gray.700');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
-  
-    return (
-      <Box
-        borderWidth="1px"
-        borderRadius="lg"
-        p={6}
-        bg={bgColor}
-        borderColor={borderColor}
-        boxShadow="md"
-        width="100%"
-      >
-        <VStack align="stretch" spacing={4}>
-          <Heading size="md" color="orange.400">Table Information</Heading>
-          <Divider />
-          {isEditing ? (
-            <>
-              <FormControl>
-                <FormLabel>Table Name</FormLabel>
-                <Input name="name" value={tableData.name} onChange={handleInputChange} />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Table Type</FormLabel>
-                <Input name="type" value={tableData.type} onChange={handleInputChange} />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Max. People</FormLabel>
-                <Input name="people" type="number" value={tableData.people} onChange={handleInputChange} />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Reserved</FormLabel>
-                <Select name="isReserved" value={tableData.isReserved ? 'yes' : 'no'} onChange={handleInputChange}>
-                  <option value='yes'>Yes</option>
-                  <option value='no'>No</option>
-                </Select>
-              </FormControl>
-            </>
-          ) : (
-            <>
-              <Flex justify="space-between">
-                <Text fontWeight="bold">Table Name:</Text>
-                <Text>{tableData.name}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text fontWeight="bold">Table Type:</Text>
-                <Text>{tableData.type}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text fontWeight="bold">Max. People:</Text>
-                <Text>{tableData.people} people</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text fontWeight="bold">Reserved:</Text>
-                <Badge colorScheme={tableData.isReserved ? 'red' : 'green'}>
-                  {tableData.isReserved ? 'Yes' : 'No'}
-                </Badge>
-              </Flex>
-            </>
-          )}
-          <Divider />
-          <Flex justify="flex-end" gap={4}>
-            {isEditing ? (
-              <>
-                <Button leftIcon={<CloseIcon />} onClick={() => setIsEditing(false)} variant="outline">
-                  Cancel
-                </Button>
-                <Button leftIcon={<CheckIcon />} onClick={handleSave} colorScheme="orange">
-                  Save Changes
-                </Button>
-              </>
-            ) : (
-              <Button leftIcon={<EditIcon />} onClick={() => setIsEditing(true)} colorScheme="orange">
-                Edit Table
-              </Button>
-            )}
-          </Flex>
+  return (
+    <Card>
+      <CardBody>
+        <VStack spacing={4} align="stretch">
+          <FormControl>
+            <FormLabel>Table Name</FormLabel>
+            <Input
+              value={table.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Table Type</FormLabel>
+            <Select
+              value={table.type}
+              onChange={(e) => handleChange('type', e.target.value)}
+            >
+              <option value="Normal">Normal</option>
+              <option value="VIP">VIP</option>
+              <option value="Booth">Booth</option>
+              <option value="Bar">Bar</option>
+            </Select>
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Max People</FormLabel>
+            <Input
+              type="number"
+              value={table.people}
+              onChange={(e) => handleChange('people', parseInt(e.target.value))}
+              min={1}
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Status</FormLabel>
+            <Select
+              value={table.isReserved ? 'reserved' : 'available'}
+              onChange={(e) => handleChange('isReserved', e.target.value === 'reserved')}
+            >
+              <option value="available">Available</option>
+              <option value="reserved">Reserved</option>
+            </Select>
+          </FormControl>
+
+          <HStack spacing={2} mt={2}>
+            <Badge colorScheme={table.isReserved ? 'red' : 'green'}>
+              {table.isReserved ? 'Reserved' : 'Available'}
+            </Badge>
+            <Badge colorScheme="purple">{table.type}</Badge>
+            <Badge colorScheme="blue">{table.people} People</Badge>
+          </HStack>
         </VStack>
-      </Box>
-    );
-  };
-  
-  const StyledKonvaCanvas: React.FC<StyledKonvaCanvasProps> = ({
-    tableList,
-    selectedId,
-    setSelectedId,
-    updateTable
-  }) => {
-    const bgColor = useColorModeValue('gray.100', 'gray.700');
-    const borderColor = useColorModeValue('gray.300', 'gray.600');
-  
-    return (
-      <Box
-        borderWidth="2px"
-        borderStyle="solid"
-        borderColor={borderColor}
-        borderRadius="lg"
-        overflow="hidden"
-        bg={bgColor}
-        boxShadow="lg"
-        width="100%"
-        height="600px"
-      >
-        <Stage width={800} height={600}>
-          <Layer>
-            {tableList.map((table, index) => (
-              <TableImage
-                key={index}
-                isSelected={index === selectedId}
-                onSelect={() => setSelectedId(index)}
-                onChange={(newProps) => updateTable(index, newProps)}
-                {...table}
-              />
-            ))}
-          </Layer>
-        </Stage>
-      </Box>
-    );
-  };
-  
-  export const DragDropSeatingCanvas: React.FC<{id: string}> = ({id}) => {
-    const [tableList, setTableList] = useState<TableList>([{x:50, y:50, width:100, height:100, name:"Table 1", type:"Normal", people:10, isReserved:false}]);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
-    const [history, setHistory] = useState<TableList[]>([]);
-    const [historyStep, setHistoryStep] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
-    const toast = useToast();
-  
-    useEffect(() => {
-      fetchClubInfo(id).then(data => {
-        console.log("Printing data.tableLayout[0]: "); console.log(data.tableLayout[0].tableLayout.tables);
-        setTableList(data.tableLayout[0].tableLayout.tables);
-        setIsLoading(true);
-      });
-    }, []);
+      </CardBody>
+    </Card>
+  );
+};
 
-    const saveLayout = (tables: TableList) => {
+export const DragDropSeatingCanvas: React.FC<{id: string}> = ({id}) => {
+  const [tableList, setTableList] = useState<TableList>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [history, setHistory] = useState<TableList[]>([]);
+  const [historyStep, setHistoryStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const toast = useToast();
+
+  // Initial load of table layout
+  useEffect(() => {
+    const fetchLayout = async () => {
+      try {
+        const data = await fetchClubInfo(id);
+        if (data?.tableLayout?.[0]?.tableLayout?.tables) {
+          setTableList(data.tableLayout[0].tableLayout.tables);
+          setHistory([data.tableLayout[0].tableLayout.tables]);
+        }
+      } catch (error) {
+        console.error('Error loading layout:', error);
+        toast({
+          title: 'Error loading layout',
+          status: 'error',
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLayout();
+  }, [id]);
+
+  const saveLayout = async () => {
+    try {
       const layout = {
         name: "main layout",
-        tables: tables
+        tables: tableList
       };
-      saveDataLayout(id, layout);
+      await saveDataLayout(id, layout);
       toast({
-        title: "Layout Saved.",
-        description: "Your layout has been successfully saved.",
+        title: "Layout saved successfully",
         status: "success",
         duration: 3000,
-        isClosable: true,
       });
-    };
-  
-    const addTable = () => {
-      const newTableList = [
-        ...tableList,
-        {x:Math.random() * 400, y:Math.random() * 300, width:100, height:100, name:`Table ${tableList.length + 1}`, type:"Normal", people:10, isReserved:false} as Table
-      ];
-      setTableList(newTableList);
-      updateHistory(newTableList);
-    };
-  
-    const updateTable = (index: number, newProps: Partial<Table>) => {
-      const newTableList = tableList.map((table, i) => 
-        i === index ? { ...table, ...newProps } : table
-      );
-      setTableList(newTableList);
-      updateHistory(newTableList);
-    };
-  
-    const updateHistory = (newTableList: TableList) => {
-      const newHistory = history.slice(0, historyStep + 1);
-      newHistory.push(newTableList);
-      setHistory(newHistory);
-      setHistoryStep(newHistory.length - 1);
-    };
-  
-    const handleUndo = () => {
-      if (historyStep > 0) {
-        setHistoryStep(prevStep => prevStep - 1);
-        setTableList(history[historyStep - 1]);
-      }
-    };
-  
-    const handleRedo = () => {
-      if (historyStep < history.length - 1) {
-        setHistoryStep(prevStep => prevStep + 1);
-        setTableList(history[historyStep + 1]);
-      }
-    };
-  
-    const deleteSelectedTable = () => {
-      if (selectedId !== null) {
-        const newTableList = tableList.filter((_, index) => index !== selectedId);
-        setTableList(newTableList);
-        updateHistory(newTableList);
-        setSelectedId(null);
-      }
-    };
-  
-    return (
-      <Box maxW="7xl" mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-        <Heading as="h1" size="xl" mb={6} color="orange.400">
-          Table Layout Manager
-        </Heading>
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8}>
-          <VStack spacing={4} align="stretch">
-            {tableList && (
-              <StyledKonvaCanvas
-                tableList={tableList}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-                updateTable={updateTable}
-              />
-            )}
-            <Flex justify="space-between" wrap="wrap" gap={2}>
-              <Button
-                leftIcon={<AddIcon />}
-                onClick={addTable}
-                colorScheme="orange"
-                size="sm"
-              >
-                Add Table
-              </Button>
-              <Button
-                leftIcon={<RepeatIcon />}
-                onClick={handleUndo}
-                isDisabled={historyStep === 0}
-                colorScheme="blue"
-                size="sm"
-              >
-                Undo
-              </Button>
-              <Button
-                leftIcon={<RepeatIcon />}
-                onClick={handleRedo}
-                isDisabled={historyStep === history.length - 1}
-                colorScheme="blue"
-                size="sm"
-              >
-                Redo
-              </Button>
-              <Button
-                leftIcon={<DeleteIcon />}
-                onClick={deleteSelectedTable}
-                isDisabled={selectedId === null}
-                colorScheme="red"
-                size="sm"
-              >
-                Delete Selected
-              </Button>
-              <Button
-                leftIcon={<SaveIcon />}
-                onClick={() => saveLayout(tableList)}
-                colorScheme="green"
-                size="sm"
-              >
-                Save Layout
-              </Button>
-            </Flex>
-          </VStack>
-          <Box>
-            {selectedId !== null ? (
-              <EditTableInfo
-                table={tableList[selectedId]}
-                onSave={(updatedTable) => updateTable(selectedId, updatedTable)}
-              />
-            ) : (
-              <Box
-                borderWidth="1px"
-                borderRadius="lg"
-                p={6}
-                bg={useColorModeValue('white', 'gray.700')}
-                borderColor={useColorModeValue('gray.200', 'gray.600')}
-                boxShadow="md"
-              >
-                <Text>No table selected. Click on a table to edit its details.</Text>
-              </Box>
-            )}
-          </Box>
-        </SimpleGrid>
-      </Box>
-    );
+    } catch (error) {
+      toast({
+        title: "Error saving layout",
+        status: "error",
+        duration: 3000,
+      });
+    }
   };
+
+  const addTable = () => {
+    const newTable: Table = {
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      name: `Table ${tableList.length + 1}`,
+      type: "Normal",
+      people: 4,
+      isReserved: false
+    };
+    
+    const newTableList = [...tableList, newTable];
+    setTableList(newTableList);
+    updateHistory(newTableList);
+  };
+
+  const updateTable = (index: number, newProps: Partial<Table>) => {
+    const newTableList = tableList.map((table, i) =>
+      i === index ? { ...table, ...newProps } : table
+    );
+    setTableList(newTableList);
+    updateHistory(newTableList);
+  };
+
+  const updateHistory = (newTableList: TableList) => {
+    const newHistory = history.slice(0, historyStep + 1);
+    newHistory.push(newTableList);
+    setHistory(newHistory);
+    setHistoryStep(newHistory.length - 1);
+  };
+
+  const handleUndo = () => {
+    if (historyStep > 0) {
+      setHistoryStep(prevStep => prevStep - 1);
+      setTableList(history[historyStep - 1]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyStep < history.length - 1) {
+      setHistoryStep(prevStep => prevStep + 1);
+      setTableList(history[historyStep + 1]);
+    }
+  };
+
+  const deleteSelectedTable = () => {
+    if (selectedId !== null) {
+      const newTableList = tableList.filter((_, index) => index !== selectedId);
+      setTableList(newTableList);
+      updateHistory(newTableList);
+      setSelectedId(null);
+    }
+  };
+
+  if (isLoading) {
+    return <Box>Loading...</Box>;
+  }
+
+  return (
+    <Box maxW="8xl" mx="auto" pt={5} px={{ base: 2, sm: 12, md: 17 }}>
+      <Heading as="h1" size="xl" mb={6} color="orange.400">
+        Table Layout Manager
+      </Heading>
+      
+      <HStack spacing={8} align="start">
+        <VStack spacing={4} align="stretch" flex={2}>
+          <Box
+            bg={useColorModeValue('white', 'gray.800')}
+            borderRadius="lg"
+            boxShadow="xl"
+            overflow="hidden"
+            height="600px"
+            position="relative"
+          >
+            <Stage
+              width={800}
+              height={600}
+              onClick={(e) => {
+                if (e.target === e.target.getStage()) {
+                  setSelectedId(null);
+                }
+              }}
+            >
+              <Layer>
+                {tableList.map((table, index) => (
+                  <TableImage
+                    key={index}
+                    isSelected={index === selectedId}
+                    onSelect={() => setSelectedId(index)}
+                    onChange={(newProps) => updateTable(index, newProps)}
+                    {...table}
+                  />
+                ))}
+              </Layer>
+            </Stage>
+          </Box>
+
+          <HStack spacing={4}>
+            <Button
+              leftIcon={<Plus />}
+              onClick={addTable}
+              colorScheme="orange"
+            >
+              Add Table
+            </Button>
+            <Button
+              leftIcon={<Undo />}
+              onClick={handleUndo}
+              isDisabled={historyStep === 0}
+            >
+              Undo
+            </Button>
+            <Button
+              leftIcon={<Redo />}
+              onClick={handleRedo}
+              isDisabled={historyStep === history.length - 1}
+            >
+              Redo
+            </Button>
+            <Button
+              leftIcon={<Trash2 />}
+              onClick={deleteSelectedTable}
+              isDisabled={selectedId === null}
+              colorScheme="red"
+            >
+              Delete Selected
+            </Button>
+            <Button
+              leftIcon={<Save />}
+              onClick={saveLayout}
+              colorScheme="green"
+            >
+              Save Layout
+            </Button>
+          </HStack>
+        </VStack>
+
+        <Box flex={1}>
+          {selectedId !== null ? (
+            <EditTableInfo
+              table={tableList[selectedId]}
+              onSave={(updates) => updateTable(selectedId, updates)}
+            />
+          ) : (
+            <Card>
+              <CardBody>
+                <Text color="gray.500">
+                  Select a table to edit its properties
+                </Text>
+              </CardBody>
+            </Card>
+          )}
+        </Box>
+      </HStack>
+    </Box>
+  );
+};
+
+export default DragDropSeatingCanvas;

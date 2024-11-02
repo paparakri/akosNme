@@ -34,6 +34,7 @@ import { getCurrentUser, useIsUserSignedIn } from '../lib/userStatus';
 import { logout } from '../lib/authHelper';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { UserMenu } from './userMenu';
 
 interface User {
   _id: string;
@@ -143,53 +144,7 @@ export default function Navbar() {
               </Button>
             </Stack>
           ) : (
-            <Menu placement='bottom-end'>
-              <MenuButton
-                as={Button}
-                verticalAlign={'center'}
-                variant='ghost'
-                display='flex'
-                alignItems='end'
-                shadow={'xl'}
-                px={2}
-                py={1}
-                borderWidth={1}
-                borderRadius='full'
-              >
-                <HamburgerIcon m={2} />
-                <Avatar size='sm' name={user?.username || 'User'} src={user?.avatar} />
-              </MenuButton>
-              <MenuList
-                bg={useColorModeValue('white', 'gray.800')}
-                borderColor={useColorModeValue('gray.200', 'gray.700')}
-              >
-                <MenuItem onClick={() => handleButtonClick('/my-profile')}>
-                  <Text fontStyle="italic">
-                    Show Profile
-                  </Text>
-                </MenuItem>
-                <Divider borderColor="gray.300" borderWidth="1px" my={1} />
-                <MenuItem onClick={() => handleButtonClick('/my-profile/bookings')}>
-                  Bookings
-                </MenuItem>
-                <MenuItem>
-                  Messages
-                </MenuItem>
-                <MenuItem>
-                  Favorite Clubs
-                </MenuItem>
-                <Divider borderColor="gray.300" borderWidth="1px" my={1} />
-                <MenuItem onClick={() => handleButtonClick('my-profile/account-settings')}>
-                  Account Settings
-                </MenuItem>
-                <Divider borderColor="gray.300" borderWidth="1px" my={1} />
-                <MenuItem onClick={handleLogout}>
-                  <Text>
-                    Log out
-                  </Text>
-                </MenuItem>
-              </MenuList>
-            </Menu>
+            <UserMenu handleButtonClick={handleButtonClick} handleLogout={handleLogout} user={user} />
           )}
         </Stack>
       </Flex>
@@ -356,15 +311,15 @@ const NAV_ITEMS: Array<NavItem> = [
     href: '/'
   },
   {
-    label: 'Search',
-    href: '#'
+    label: 'Explore Clubs',
+    href: '/explore-clubs'
   },
   {
-    label: 'Events',
-    href: '#'
+    label: 'Explore Events',
+    href: '/explore-events'
   },
   {
-    label: 'Following Feed',
-    href: '#'
+    label: 'Social Feed',
+    href: '/social-feed'
   }
 ]

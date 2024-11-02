@@ -69,7 +69,10 @@ const BarCard: React.FC<BarCardProps> = ({imageUrl, imageAlt, title, description
           <ChakraImage
             src={imageUrl}
             alt={imageAlt}
+            minW={'100%'}
+            maxH={'20vh'}
             roundedTop="inherit"
+            objectFit="cover"
           />
   
           <Box p="6">
