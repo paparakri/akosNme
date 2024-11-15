@@ -5,6 +5,7 @@ const {logger} = require('./middleware/logger');
 const errorHandler = require('./middleware/errorHandler');
 const verifyToken = require('./middleware/auth');
 const cookieParser = require('cookie-parser');
+const { verifyData } = require('./controllers/search');
 const PORT = process.env.PORT || 3500;
 
 //Load environment variables
@@ -30,6 +31,11 @@ app.use(express.json());
 //cookie parser
 app.use(cookieParser());
 
+verifyData().then(count => {
+    console.log(`Verified ${count} documents in database`);
+});
+
+
 //Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/user', express.static(path.join(__dirname, 'public')));
@@ -43,6 +49,7 @@ app.use('/logout', require('./routes/logout.js'));
 
 app.use('/user', require('./routes/user.js'));
 app.use('/club', require('./routes/club.js'));
+app.use('/search', require('./routes/search.js'));
 app.use('/provider', require('./routes/provider.js'));
 
 app.all('*', require('./config/404'));

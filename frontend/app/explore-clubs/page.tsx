@@ -1,134 +1,106 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-import {
-  Box,
-  Button,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  SimpleGrid,
-  Text,
-  Icon,
-  Flex,
-  useBreakpointValue,
-} from "@chakra-ui/react";
-import { FaFire, FaGlassMartini, FaGraduationCap, FaUsers, FaHeart, FaGuitar } from "react-icons/fa";
-import Link from "next/link";
+"use client"
 
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import {
+  FaFire, FaGlassMartini, FaGraduationCap, FaUsers,
+  FaHeart, FaGuitar, FaSearch, FaCompass
+} from "react-icons/fa";
 import BarCard from "../ui/barCard";
 import SearchBar from "../ui/searchBar";
 import ResponsiveMasonryGrid from "../ui/responsiveMasonryGrid";
 import { fetchLists } from "../lib/backendAPI";
 
-interface Location {
-  address?: string;
-  coordinates?: [number, number];
-  type?: string;
-}
-
-interface BarCardData {
-  _id: string;
-  username: string;
-  displayName: string;
-  description: string;
-  formattedPrice: number;
-  reviews: Array<{ id: string }>;
-  location: Location;
-  rating: number;
-  score_data: {
-    [key: string]: number;
-  };
-  address: string;
-}
-
-interface CategoryData {
-  id: string;
-  name: string;
-  icon: typeof FaFire;
-  description: string;
-}
-
-const categories: CategoryData[] = [
+const categories = [
   {
     id: "trending",
     name: "Trending Now",
     icon: FaFire,
-    description: "Hot spots getting lots of attention right now"
+    description: "Hot spots getting lots of attention right now",
+    gradient: "from-blue-500 to-pink-500",
+    pattern: "radial-gradient(circle at 20% 110%, rgba(255, 122, 0, 0.15), transparent 50%)"
   },
   {
     id: "luxury",
     name: "Luxury",
     icon: FaGlassMartini,
-    description: "High-end venues with premium experiences"
+    description: "High-end venues with premium experiences",
+    gradient: "from-purple-500 to-indigo-500",
+    pattern: "radial-gradient(circle at 80% -10%, rgba(147, 51, 234, 0.15), transparent 50%)"
   },
   {
     id: "student_friendly",
     name: "Student Friendly",
     icon: FaGraduationCap,
-    description: "Budget-friendly spots perfect for students"
+    description: "Budget-friendly spots perfect for students",
+    gradient: "from-green-500 to-teal-500",
+    pattern: "radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.15), transparent 50%)"
   },
   {
     id: "big_groups",
     name: "Group Friendly",
     icon: FaUsers,
-    description: "Ideal venues for large groups and parties"
+    description: "Ideal venues for large groups and parties",
+    gradient: "from-blue-500 to-cyan-500",
+    pattern: "radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.15), transparent 50%)"
   },
   {
     id: "date_night",
     name: "Date Night",
     icon: FaHeart,
-    description: "Romantic settings for the perfect date"
+    description: "Romantic settings for the perfect date",
+    gradient: "from-red-500 to-pink-500",
+    pattern: "radial-gradient(circle at 50% -50%, rgba(244, 63, 94, 0.15), transparent 50%)"
   },
   {
     id: "live_music",
     name: "Live Music",
     icon: FaGuitar,
-    description: "Venues featuring live performances"
+    description: "Venues featuring live performances",
+    gradient: "from-yellow-500 to-blue-500",
+    pattern: "radial-gradient(circle at 120% 50%, rgba(234, 179, 8, 0.15), transparent 50%)"
   }
 ];
 
-const getLocationString = (location: Location): string => {
-    if (location.address) {
-      return location.address;
-    }
-    if (location.coordinates) {
-      return `${location.coordinates[1]}, ${location.coordinates[0]}`;
-    }
-    return "Location unavailable";
-  };
-
 export default function ExplorePage() {
   const [selectedCategory, setSelectedCategory] = useState("trending");
-  const [clubs, setClubs] = useState<BarCardData[]>([]);
+  const [clubs, setClubs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const tabListRef = useRef<HTMLDivElement>(null);
+  const [hoveredCard, setHoveredCard] = useState(null);
 
-  const isMobile = useBreakpointValue({ base: true, md: false });
+  const headerRef = useRef(null);
+  const { scrollY } = useScroll();
+  const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.98]);
+  const headerScale = useTransform(scrollY, [0, 100], [1, 0.98]);
+  
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.scrollY;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrolled / maxScroll) * 100;
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchClubs = async () => {
       setIsLoading(true);
       try {
         const list = await fetchLists(selectedCategory);
-        // Add debug logging
-        console.log('Raw API response:', list);
-        
         if (list && Array.isArray(list)) {
-          const sortedClubs = list.sort((a: BarCardData, b: BarCardData) => {
+          const sortedClubs = list.sort((a, b) => {
             const scoreA = a.score_data?.[selectedCategory] || 0;
             const scoreB = b.score_data?.[selectedCategory] || 0;
             return scoreB - scoreA;
           });
           setClubs(sortedClubs);
-        } else {
-          console.error("Invalid data format received from API:", list);
-          setClubs([]);
         }
       } catch (error) {
         console.error("Error fetching clubs:", error);
@@ -141,215 +113,214 @@ export default function ExplorePage() {
     fetchClubs();
   }, [selectedCategory]);
 
-  useEffect(() => {
-    if (clubs.length > 0) {
-      // Method 1: Log with JSON.stringify to capture exact values at this moment
-      //console.log('Clubs[0] exact snapshot:', JSON.stringify(clubs[0], null, 2));
-      //console.log('Location exact snapshot:', JSON.stringify(clubs[0].location, null, 2));
-  
-      // Method 2: Create immediate copies
-      const clubCopy = {...clubs[0]};
-      const locationCopy = {...clubs[0].location};
-      
-      //console.log('Club copy:', clubCopy);
-      //console.log('Location copy:', locationCopy);
-      
-      // Method 3: Log primitive values that can't change
-      //console.log('Location keys:', Object.keys(clubs[0].location));
-      //console.log('Location values:', Object.values(clubs[0].location));
-    }
-  }, [clubs]);
-
-  const loadMore = () => {
-    setPage(prevPage => prevPage + 1);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    if (tabListRef.current) {
-      setStartX(e.pageX - tabListRef.current.offsetLeft);
-      setScrollLeft(tabListRef.current.scrollLeft);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    if (tabListRef.current) {
-      const x = e.pageX - tabListRef.current.offsetLeft;
-      const walk = (x - startX) * 2;
-      tabListRef.current.scrollLeft = scrollLeft - walk;
-    }
-  };
-
-  const handleTabChange = (index: number) => {
-    setSelectedCategory(categories[index].id);
-    setPage(1); // Reset page when changing categories
-  };
+  const selectedCategoryData = categories.find(c => c.id === selectedCategory);
 
   return (
-    <Box mx={{ base: "5vw", md: "10vw" }} my={8}>
-      <Box mb={8}>
-        <SearchBar />
-      </Box>
-
-      <Tabs variant="soft-rounded" colorScheme="orange" onChange={handleTabChange}>
-        <Box
-          position="relative"
-          mb={6}
-          sx={{
-            "&::before, &::after": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              width: "20px",
-              zIndex: 1,
-              pointerEvents: "none"
-            },
-            "&::before": {
-              left: 0,
-              background: "linear-gradient(to right, white, transparent)"
-            },
-            "&::after": {
-              right: 0,
-              background: "linear-gradient(to left, white, transparent)"
-            }
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      {/* Sophisticated progress bar with glow effect */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-black/10 dark:bg-white/10 z-50">
+        <motion.div 
+          className="h-full relative"
+          style={{ 
+            width: `${scrollProgress}%`,
+            background: `linear-gradient(to right, ${selectedCategoryData.gradient.split(' ')[1]}, ${selectedCategoryData.gradient.split(' ')[3]})` 
           }}
         >
-          <TabList 
-            ref={tabListRef}
-            overflowX="auto"
-            overflowY="hidden"
-            whiteSpace="nowrap"
-            position="relative"
-            px={2}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            sx={{
-              cursor: isDragging ? "grabbing" : "grab",
-              "&::-webkit-scrollbar": {
-                display: "none"
-              },
-              scrollbarWidth: "none",
-              "-ms-overflow-style": "none",
-              scrollBehavior: "smooth",
-              WebkitOverflowScrolling: "touch",
-              display: "flex",
-              flexWrap: "nowrap",
-              "&::after": {
-                content: '""',
-                minWidth: "20px"
-              },
-              userSelect: "none",
-              touchAction: "pan-x pinch-zoom",
-            }}
+          <div className="absolute top-0 right-0 w-4 h-full blur-sm" 
+            style={{ 
+              background: `linear-gradient(to right, ${selectedCategoryData.gradient.split(' ')[1]}, ${selectedCategoryData.gradient.split(' ')[3]})` 
+            }} 
+          />
+        </motion.div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+        {/* Hero Section with Dynamic Background */}
+        <motion.div 
+          ref={headerRef}
+          style={{ opacity: headerOpacity, scale: headerScale }}
+          className="relative mb-16"
+        >
+          <div className="absolute inset-0" style={{ background: selectedCategoryData.pattern }} />
+          <div className="relative">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-8"
+            >
+              <h1 className="text-5xl md:text-6xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                  Discover Your
+                </span>
+                <br />
+                <span className={`bg-gradient-to-r ${selectedCategoryData.gradient} bg-clip-text text-transparent`}>
+                  Perfect Venue
+                </span>
+              </h1>
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                Explore Athens' finest nightlife spots, from trendy bars to exclusive clubs
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <SearchBar />
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Enhanced Categories Section */}
+        <div className="mb-16">
+          <motion.div 
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
           >
             {categories.map((category) => (
-              <Tab 
+              <motion.button
                 key={category.id}
-                mr={4}
-                px={6}
-                py={3}
-                borderRadius="full"
-                flex="0 0 auto"
-                _selected={{ 
-                  color: "white", 
-                  bg: "orange.400",
-                  boxShadow: "md"
-                }}
-                _hover={{
-                  bg: "orange.300"
-                }}
-                transition="all 0.2s"
+                onClick={() => setSelectedCategory(category.id)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`relative overflow-hidden rounded-xl p-4 transition-all duration-300
+                  ${selectedCategory === category.id 
+                    ? `bg-gradient-to-r ${category.gradient} text-white shadow-lg` 
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:shadow-md'
+                  }`}
               >
-                <Flex align="center">
-                  <Icon as={category.icon} mr={2} />
-                  <Text>{category.name}</Text>
-                </Flex>
-              </Tab>
+                <div className="absolute inset-0 opacity-20" style={{ background: category.pattern }} />
+                <div className="relative z-10 flex flex-col items-center space-y-2">
+                  <category.icon className="w-6 h-6" />
+                  <span className="text-sm font-medium">{category.name}</span>
+                </div>
+              </motion.button>
             ))}
-          </TabList>
-        </Box>
+          </motion.div>
+        </div>
 
-        <TabPanels>
-        {categories.map((category) => (
-          <TabPanel key={category.id} px={0}>
-            <Box mb={8} textAlign="center">
-              <Text fontSize="lg" color="gray.600">
-                {category.description}
-              </Text>
-            </Box>
+        {/* Category Description with Dynamic Background */}
+        <motion.div 
+          className="relative mb-16 p-8 rounded-2xl overflow-hidden"
+          style={{ background: selectedCategoryData.pattern }}
+        >
+          <motion.div
+            key={selectedCategory}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 text-center"
+          >
+            <h2 className="text-2xl font-bold mb-2">
+              <span className={`bg-gradient-to-r ${selectedCategoryData.gradient} bg-clip-text text-transparent`}>
+                {selectedCategoryData.name}
+              </span>
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              {selectedCategoryData.description}
+            </p>
+          </motion.div>
+        </motion.div>
 
-            {isLoading ? (
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                {[...Array(6)].map((_, i) => (
-                  <Box 
-                    key={i} 
-                    height="300px" 
-                    borderRadius="lg" 
-                    bg="gray.100" 
-                    animation="pulse 2s infinite"
-                  />
-                ))}
-              </SimpleGrid>
-            ) : clubs.length > 0 ? (
-              <Box width="100%">
-                <ResponsiveMasonryGrid>
-                {clubs.slice(0, 8 * page).map((club) => (
-                    <Link key={club._id} href={`/club/${club.username}`}>
-                    <Box width="100%">
-                        <BarCard
-                        imageUrl=""
-                        imageAlt=""
+        {/* Venues Grid with Enhanced Loading State */}
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative overflow-hidden rounded-xl h-96"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent" />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : clubs.length > 0 ? (
+            <ResponsiveMasonryGrid>
+              {clubs.slice(0, 8 * page).map((club, index) => (
+                <motion.div
+                  key={club._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ y: -10 }}
+                  onHoverStart={() => setHoveredCard(club._id)}
+                  onHoverEnd={() => setHoveredCard(null)}
+                >
+                  <Link href={`/club/${club.username}`}>
+                    <div className="transform transition-all duration-300">
+                      <BarCard
+                        username={club.username}
+                        imageUrl={club.images ? club.images[0].toString() : '/default-club.jpeg'}
+                        imageAlt={club.displayName}
                         title={club.displayName}
                         description={club.description}
                         formattedPrice={club.formattedPrice}
                         reviewCount={club.reviews.length}
                         location={club.address}
                         rating={club.rating}
-                        />
-                    </Box>
-                    </Link>
-                ))}
-                </ResponsiveMasonryGrid>
-                
-                {clubs.length > 8 * page && (
-                  <Box textAlign="center" mt={8}>
-                    <Button
-                      bg="orange.400"
-                      color="white"
-                      _hover={{ bg: "orange.300" }}
-                      onClick={loadMore}
-                    >
-                      Show More
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            ) : (
-              <Box 
-                textAlign="center" 
-                py={16} 
-                px={4} 
-                borderRadius="lg" 
-                bg="gray.50"
-              >
-                <Text fontSize="lg" color="gray.600">
-                  No clubs found in this category
-                </Text>
-              </Box>
-            )}
-          </TabPanel>
-        ))}
-      </TabPanels>
-      </Tabs>
-    </Box>
+                      />
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </ResponsiveMasonryGrid>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="text-center py-16"
+            >
+              <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
+                <FaCompass className="w-8 h-8 text-gray-400 animate-pulse" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                No venues found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Try adjusting your search or exploring different categories
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Enhanced Load More Button */}
+        {clubs.length > 8 * page && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mt-16"
+          >
+            <motion.button
+              onClick={() => setPage(p => p + 1)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`px-8 py-4 bg-gradient-to-r ${selectedCategoryData.gradient} text-white rounded-full
+                       shadow-lg hover:shadow-xl transition-shadow duration-300`}
+            >
+              <span className="flex items-center space-x-2">
+                <span>Discover More Venues</span>
+                <FaCompass className="w-4 h-4 animate-pulse" />
+              </span>
+            </motion.button>
+          </motion.div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -131,5 +131,8 @@ const ClubUserSchema = new mongoose.Schema(
     {timestamps:true}
 );
 
+// Add 2dsphere index for geospatial queries
+ClubUserSchema.index({ location: "2dsphere" });
+
 const ClubUser = mongoose.model("ClubUser", ClubUserSchema);
 module.exports = ClubUser;

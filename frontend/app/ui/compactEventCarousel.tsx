@@ -32,7 +32,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction } : { clubId: string, a
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500" />
       </div>
     );
   }
@@ -82,7 +82,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction } : { clubId: string, a
                   </div>
                   
                   {index === currentIndex && (
-                    <button className="mt-2 w-full bg-orange-500 text-white py-1 px-2 rounded text-xs hover:bg-orange-600 transition-colors" onClick={autofillFunction.bind(null, new Date(event.date), new Date(event.startTime), event.endTime)}>
+                    <button className="mt-2 w-full bg-blue-500 text-white py-1 px-2 rounded text-xs hover:bg-blue-600 transition-colors" onClick={autofillFunction.bind(null, new Date(event.date), new Date(event.startTime), event.endTime)}>
                       Get Tickets
                     </button>
                   )}
@@ -121,7 +121,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction } : { clubId: string, a
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'
+                index === currentIndex ? 'bg-blue-500' : 'bg-gray-300'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />

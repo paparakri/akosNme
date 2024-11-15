@@ -4,6 +4,7 @@ const path = require('path');
 const { getEvents, postEvent, updateEvent, deleteEvent } = require('../controllers/events');
 const { saveLayout, getClubUser, getClubUserByName, createClubUser, getFollowers, addRemoveInterest, getInterests, updateClubUser, deleteClubUser } = require('../controllers/clubs');
 const { updateAllClubs } = require("../config/updateAllUsers.js");
+const { getClubReservations } = require('../controllers/reservations');
 
 router.route('/update-all')
     .post(updateAllClubs);
@@ -36,5 +37,8 @@ router.route('/:user/add')
 
 router.route('/:user/save-layout')
     .post(saveLayout);
+
+router.route('/:user/reservations')
+    .get(getClubReservations);
 
 module.exports = router;

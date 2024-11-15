@@ -104,6 +104,16 @@ export const postReservation = async (reservationData: any) => {
     }
 }
 
+export const updateReservation = async (reservationData: any) => {
+    try {
+        const response = await axios.put(`http://127.0.0.1:3500/reservations`, reservationData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating reservation:", error);
+        return null;
+    }
+}
+
 export const deleteReservation = async (reservationId: string) => {
     try {
         const response = await axios.delete("http://127.0.0.1:3500/reservations", { data: { reservationId: reservationId } });
@@ -124,7 +134,14 @@ export const fetchUserReservations = async (id: string) => {
     }
 }
 
-export const fetchClubReservations = async (clubName: string) => {
+export const fetchClubReservations = async (id: string) => {
+    try{
+        const response = await axios.get(`http://127.0.0.1:3500/club/${id}/reservations/`);
+        return response.data;
+    } catch (error){
+        console.error("Error fetching club reservations:", error);
+        return null;
+    }
 }
 
 //CLUBS
@@ -225,7 +242,7 @@ export const fetchNormalUser = async (id: string) => {
         const response = await axios.get(`http://127.0.0.1:3500/user/${id}`);
         return response.data;
     } catch (error) {
-        //console.error(`Error fetching user ${username} info: `, error);
+        console.error(`Error fetching user ${id} info: `, error);
         return null;
     }
 }
@@ -555,5 +572,134 @@ export const unfollowClub = async (userId: string, clubId: string): Promise<void
     } catch (error: any) {
       console.error('Error unfollowing club:', error);
       throw new Error(error.response?.data?.message || 'Failed to unfollow club');
+    }
+};
+
+
+//SEARCH FUNCTIONS
+interface SearchParams {
+    searchQuery?: string;
+    location?: string;
+    date?: string;
+    genre?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    rating?: number;
+    radius?: number;
+    page?: number;
+    limit?: number;
+}
+
+interface SearchResponse {
+    results: Array<{
+        _id: string;
+        username: string;
+        displayName: string;
+        description: string;
+        location: {
+            type: string;
+            coordinates: [number, number];
+            address: string;
+        };
+        formattedPrice: number;
+        rating: number;
+        reviews: string[];
+        genres: string[];
+        features: string[];
+        images: string[];
+        openingHours: {
+            [key: string]: {
+                isOpen: boolean;
+                open: string;
+                close: string;
+            };
+        };
+        distance?: number;
+        score?: number;
+    }>;
+    pagination: {
+        total: number;
+        page: number;
+        pages: number;
+    };
+}
+
+export const searchClubs = async (params: SearchParams): Promise<SearchResponse | null> => {
+    try {
+        const queryParams = new URLSearchParams();
+        
+        // Add only defined parameters to query string
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== '') {
+                queryParams.append(key, value.toString());
+            }
+        });
+
+        const response = await axios.get(`http://127.0.0.1:3500/search/clubs?${queryParams.toString()}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error searching clubs:', error);
+        if (axios.isAxiosError(error)) {
+            throw new Error(error.response?.data?.message || 'Search failed');
+        }
+        throw error;
+    }
+};
+
+export const getSearchSuggestions = async (query: string): Promise<Array<{
+        _id: string;
+        displayName: string;
+        location: {
+            address: string;
+        };
+        score: number;
+    }> | null> => {
+    try {
+        const response = await axios.get(`http://127.0.0.1:3500/search/suggestions`, {
+            params: { query }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error getting search suggestions:', error);
+        if (axios.isAxiosError(error)) {
+            throw new Error(error.response?.data?.message || 'Failed to get suggestions');
+        }
+        return null;
+    }
+};
+
+export const searchBars = async ({
+    searchQuery = "",
+    location = "",
+    date = "",
+    genre = "",
+    minPrice,
+    maxPrice,
+    rating,
+    radius = 5000, // Search radius in meters, default 5km
+    page = 1,
+    limit = 10
+}: SearchParams) => {
+    console.log("searching bars");
+    try {
+        const searchResults = await searchClubs({
+            searchQuery,
+            location,
+            date,
+            genre,
+            minPrice,
+            maxPrice,
+            rating,
+            radius,
+            page,
+            limit
+        });
+
+        console.log(searchResults);
+
+        return searchResults;
+    } catch (error) {
+        console.error('Error searching bars:', error);
+        return null;
     }
 };

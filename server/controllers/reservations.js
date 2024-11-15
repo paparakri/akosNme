@@ -173,22 +173,17 @@ const getReservations = async (req, res) => {
 // PUT
 const updateReservation = async (req, res) => {
     try {
-        const userId = req.params.id;
-        const { reservationId, table, date, startTime, numOfGuests, specialRequests, minPrice } = req.body;
+        const { _id, table, date, startTime, numOfGuests, specialRequests, minPrice, status } = req.body;
 
-        const reservation = await Reservation.findById(reservationId);
+        const reservation = await Reservation.findById(_id);
 
         if (!reservation) {
             return res.status(404).json({ message: "Reservation not found." });
         }
 
-        if (reservation.user.toString() !== userId) {
-            return res.status(403).json({ message: "You can only update your own reservations." });
-        }
-
         const updatedReservation = await Reservation.findByIdAndUpdate(
-            reservationId,
-            { table, date, startTime, numOfGuests, specialRequests, minPrice },
+            _id,
+            { table, date, startTime, numOfGuests, specialRequests, minPrice, status },
             { new: true }
         );
 
@@ -211,4 +206,19 @@ const getReservationById = async (req, res) => {
     }
 };
 
-module.exports = { addReservation, removeReservation, getReservations, updateReservation, getReservationById };
+const getClubReservations = async (req, res) => {
+    try {
+        const clubId = req.params.user;
+        console.log(clubId);
+        const club = await ClubUser.findById(clubId);
+        if (!club) {
+            return res.status(404).json({ message: "Club not found." });
+        }
+        const reservations = await Reservation.find({ club: clubId });
+        res.status(200).json(reservations);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+}
+
+module.exports = { addReservation, removeReservation, getReservations, updateReservation, getReservationById, getClubReservations };

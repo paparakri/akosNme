@@ -1,27 +1,41 @@
 import React from 'react';
-import { Box, Text, useColorModeValue } from '@chakra-ui/react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import { Box, useColorModeValue } from '@chakra-ui/react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: 'Jan', sales: 4000, users: 2400 },
-  { name: 'Feb', sales: 3000, users: 1398 },
-  { name: 'Mar', sales: 2000, users: 9800 },
-  { name: 'Apr', sales: 2780, users: 3908 },
-  { name: 'May', sales: 1890, users: 4800 },
-  { name: 'Jun', sales: 2390, users: 3800 },
-  { name: 'Jul', sales: 3490, users: 4300 },
-];
-
-const SalesChart = () => {
+const SalesChart = ({ data }) => {
   const lineColor = useColorModeValue('teal.500', 'teal.300');
   const gridColor = useColorModeValue('gray.200', 'gray.700');
 
+  // Process the reservation data for the chart
+  const processData = () => {
+    const monthlyData = data.reduce((acc, reservation) => {
+      const date = new Date(reservation.createdAt);
+      const month = date.toLocaleString('default', { month: 'short' });
+      
+      if (!acc[month]) {
+        acc[month] = {
+          name: month,
+          reservations: 0,
+          revenue: 0
+        };
+      }
+      
+      acc[month].reservations++;
+      acc[month].revenue += reservation.minPrice || 0;
+      
+      return acc;
+    }, {});
+
+    return Object.values(monthlyData);
+  };
+
+  const chartData = processData();
+
   return (
     <Box h="400px" bg={'white'} p={4} borderRadius="lg" boxShadow="xl">
-      {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
-          data={data}
+          data={chartData}
           margin={{
             top: 5,
             right: 30,
@@ -31,13 +45,27 @@ const SalesChart = () => {
         >
           <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
           <XAxis dataKey="name" />
-          <YAxis />
+          <YAxis yAxisId="left" />
+          <YAxis yAxisId="right" orientation="right" />
+          <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="sales" stroke={lineColor} activeDot={{ r: 8 }} />
-          <Line type="monotone" dataKey="users" stroke="rgba(75, 192, 192, 1)" />
+          <Line
+            yAxisId="left"
+            type="monotone"
+            dataKey="reservations"
+            stroke={lineColor}
+            activeDot={{ r: 8 }}
+            name="Reservations"
+          />
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="revenue"
+            stroke="rgba(75, 192, 192, 1)"
+            name="Revenue ($)"
+          />
         </LineChart>
       </ResponsiveContainer>
-      }
     </Box>
   );
 };

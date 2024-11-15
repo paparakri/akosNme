@@ -1,32 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import {
-  VStack,
-  Box,
-  Text,
-  Avatar,
-  HStack,
-  Button,
-  Skeleton,
-  useColorModeValue,
-  Link,
-  Icon,
-  Badge
-} from '@chakra-ui/react';
-import { TimeIcon, StarIcon } from '@chakra-ui/icons';
-import { Calendar } from 'lucide-react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Star, Clock, MessageCircle, Heart, Share2, ChevronDown } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
-import NextLink from 'next/link';
-import { fetchUserFeed, type FeedItem } from '@/app/lib/backendAPI';
+import { fetchUserFeed } from '@/app/lib/backendAPI';
+
+interface FeedItem {
+  _id: string;
+  actor: {
+    displayName: string;
+    picturePath?: string;
+  };
+  verb: 'posted_review' | 'made_reservation' | 'followed_club' | 'followed_provider' | 'upcoming_event';
+  object: {
+    content: {
+      rating?: number;
+      reviewText?: string;
+      clubName?: string;
+      clubUsername?: string;
+      date?: string;
+      eventName?: string;
+      description?: string;
+      specialRequests?: string;
+    };
+  };
+  createdAt: string;
+}
 
 interface FeedItemProps {
   item: FeedItem;
+}
+
+interface SocialFeedProps {
+  userId: string;
+  feedType?: 'all' | 'following' | 'recommended';
 }
 
 const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return 'Date not available';
   
   try {
-    // Handle date strings in DD-MM-YYYY format
     if (typeof dateString === 'string' && dateString.includes('-')) {
       const [day, month, year] = dateString.split('-').map(Number);
       const date = new Date(year, month - 1, day);
@@ -35,7 +48,6 @@ const formatDate = (dateString: string | Date | undefined): string => {
       }
     }
 
-    // Try parsing as ISO string
     const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString);
     if (isValid(date)) {
       return format(date, 'PPP');
@@ -48,167 +60,179 @@ const formatDate = (dateString: string | Date | undefined): string => {
   }
 };
 
-const formatTime = (timeString: string | undefined): string => {
-  if (!timeString) return '';
+const ActionBadge: React.FC<{ type: FeedItem['verb'] }> = ({ type }) => {
+  const badges = {
+    posted_review: { color: 'bg-blue-500', icon: Star, text: 'Review' },
+    made_reservation: { color: 'bg-green-500', icon: Calendar, text: 'Reservation' },
+    followed_club: { color: 'bg-blue-500', icon: Heart, text: 'New Follow' },
+    followed_provider: { color: 'bg-purple-500', icon: Heart, text: 'New Follow' },
+    upcoming_event: { color: 'bg-pink-500', icon: Calendar, text: 'Event' }
+  };
+
+  const { color, icon: Icon, text } = badges[type];
   
-  try {
-    const date = parseISO(timeString);
-    if (isValid(date)) {
-      return format(date, 'p');
-    }
-    return '';
-  } catch {
-    return '';
-  }
-};
-
-const FeedItemCard: React.FC<FeedItemProps> = ({ item }) => {
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const mutedColor = useColorModeValue('gray.600', 'gray.400');
-
-  const renderActionBadge = () => {
-    const badges = {
-      posted_review: { colorScheme: 'orange', text: 'Review' },
-      made_reservation: { colorScheme: 'green', text: 'Reservation' },
-      followed_club: { colorScheme: 'blue', text: 'New Follow' },
-      followed_provider: { colorScheme: 'purple', text: 'New Follow' },
-      upcoming_event: { colorScheme: 'pink', text: 'Event' }
-    };
-
-    const badgeInfo = badges[item.verb];
-    return (
-      <Badge colorScheme={badgeInfo.colorScheme} fontSize="sm">
-        {badgeInfo.text}
-      </Badge>
-    );
-  };
-
-  const renderContent = () => {
-    switch (item.verb) {
-      case 'posted_review':
-        return (
-          <Box>
-            <HStack spacing={1} mb={2}>
-              {Array(5).fill('').map((_, i) => (
-                <StarIcon
-                  key={i}
-                  color={i < (item.object.content.rating || 0) ? 'orange.500' : 'gray.300'}
-                  w={4}
-                  h={4}
-                />
-              ))}
-            </HStack>
-            <Text>{item.object.content.reviewText}</Text>
-            <Link
-              as={NextLink}
-              href={`/club/${item.object.content.clubUsername}`}
-              color="blue.500"
-              fontSize="sm"
-              mt={2}
-              display="inline-block"
-            >
-              <Text as="span">at {item.object.content.clubName}</Text>
-            </Link>
-          </Box>
-        );
-
-      case 'made_reservation':
-        return (
-          <Box>
-            <HStack spacing={2} align="flex-start">
-              <Icon as={Calendar} color={mutedColor} mt={1} />
-              <VStack align="start" spacing={1}>
-                <Text>
-                  Reserved at{' '}
-                  <Link
-                    as={NextLink}
-                    href={`/club/${item.object.content.clubUsername}`}
-                    color="blue.500"
-                  >
-                    {item.object.content.clubName}
-                  </Link>
-                </Text>
-                <Text fontSize="sm" color={mutedColor}>
-                  {formatDate(item.object.content.date)}
-                </Text>
-              </VStack>
-            </HStack>
-            {item.object.content.specialRequests && (
-              <Text fontSize="sm" color={mutedColor} mt={2} fontStyle="italic">
-                "{item.object.content.specialRequests}"
-              </Text>
-            )}
-          </Box>
-        );
-
-      case 'upcoming_event':
-        return (
-          <Box>
-            <Text fontWeight="bold">{item.object.content.eventName}</Text>
-            <Text mt={1}>{item.object.content.description}</Text>
-            <HStack spacing={2} mt={2}>
-              <Icon as={Calendar} color={mutedColor} />
-              <Text fontSize="sm" color={mutedColor}>
-                {formatDate(item.object.content.date)}
-              </Text>
-            </HStack>
-            <Link
-              as={NextLink}
-              href={`/club/${item.object.content.clubUsername}`}
-              color="blue.500"
-              fontSize="sm"
-              mt={2}
-              display="inline-block"
-            >
-              {item.object.content.clubName}
-            </Link>
-          </Box>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <Box
-      p={4}
-      bg={bgColor}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="lg"
-      shadow="sm"
-      transition="all 0.2s"
-      _hover={{ shadow: 'md' }}
-    >
-      <HStack spacing={3} mb={3} justify="space-between">
-        <HStack spacing={3}>
-          <Avatar
-            size="md"
-            name={item.actor.displayName}
-            src={item.actor.picturePath}
-          />
-          <Box>
-            <HStack spacing={2}>
-              <Text fontWeight="bold">{item.actor.displayName}</Text>
-              {renderActionBadge()}
-            </HStack>
-            <Text color={mutedColor} fontSize="sm">
-              {formatDate(item.createdAt)}
-            </Text>
-          </Box>
-        </HStack>
-      </HStack>
-      {renderContent()}
-    </Box>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color} text-white`}>
+      <Icon className="w-3 h-3 mr-1" />
+      {text}
+    </span>
   );
 };
 
-interface SocialFeedProps {
-  userId: string;
-  feedType?: 'all' | 'following' | 'recommended';
-}
+const FeedItemCard: React.FC<FeedItemProps> = ({ item }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likes, setLikes] = useState(Math.floor(Math.random() * 50));
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    setLikes(prev => isLiked ? prev - 1 : prev + 1);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md 
+                 transition-all duration-300 border border-gray-200 dark:border-gray-700"
+    >
+      {/* Header */}
+      <div className="p-4 flex items-start justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-pink-500 p-[2px]">
+              <div className="w-full h-full rounded-full overflow-hidden">
+                <img
+                  src={item.actor.picturePath || '/default-avatar.svg'}
+                  alt={item.actor.displayName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {item.actor.displayName}
+            </h3>
+            <div className="flex items-center space-x-2 mt-1">
+              <ActionBadge type={item.verb} />
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {formatDate(item.createdAt)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 pb-3">
+        {item.verb === 'posted_review' && (
+          <div className="space-y-2">
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Star
+                  key={index}
+                  className={`w-5 h-5 ${
+                    index < (item.object.content.rating || 0)
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-gray-600 dark:text-gray-300">
+              {item.object.content.reviewText}
+            </p>
+            <Link
+              href={`/club/${item.object.content.clubUsername}`}
+              className="inline-flex items-center space-x-1 text-blue-500 hover:text-blue-600 
+                         transition-colors duration-200"
+            >
+              <span>{item.object.content.clubName}</span>
+            </Link>
+          </div>
+        )}
+
+        {item.verb === 'made_reservation' && (
+          <div className="space-y-3">
+            <div className="flex items-start space-x-3">
+              <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+              <div>
+                <p className="text-gray-900 dark:text-white">
+                  Reserved at{' '}
+                  <Link
+                    href={`/club/${item.object.content.clubUsername}`}
+                    className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                  >
+                    {item.object.content.clubName}
+                  </Link>
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {formatDate(item.object.content.date)}
+                </p>
+              </div>
+            </div>
+            {item.object.content.specialRequests && (
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 italic">
+                  "{item.object.content.specialRequests}"
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {item.verb === 'upcoming_event' && (
+          <div className="space-y-3">
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {item.object.content.eventName}
+            </h4>
+            <p className="text-gray-600 dark:text-gray-300">
+              {item.object.content.description}
+            </p>
+            <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center space-x-1">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(item.object.content.date)}</span>
+              </div>
+              <Link
+                href={`/club/${item.object.content.clubUsername}`}
+                className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+              >
+                {item.object.content.clubName}
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={handleLike}
+            className={`flex items-center space-x-1.5 ${
+              isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+            } hover:text-red-500 transition-colors duration-200`}
+          >
+            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+            <span className="text-sm">{likes}</span>
+          </button>
+          <button className="flex items-center space-x-1.5 text-gray-500 dark:text-gray-400 
+                           hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-sm">Comment</span>
+          </button>
+          <button className="flex items-center space-x-1.5 text-gray-500 dark:text-gray-400 
+                           hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+            <Share2 className="w-5 h-5" />
+            <span className="text-sm">Share</span>
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 const SocialFeed: React.FC<SocialFeedProps> = ({ userId, feedType = 'all' }) => {
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -218,10 +242,7 @@ const SocialFeed: React.FC<SocialFeedProps> = ({ userId, feedType = 'all' }) => 
   const [error, setError] = useState<string | null>(null);
 
   const loadMore = async () => {
-    if (!userId || isLoading) return;
-    
     try {
-      setIsLoading(true);
       const data = await fetchUserFeed(userId, page, 20);
       
       if (!data) {
@@ -248,59 +269,62 @@ const SocialFeed: React.FC<SocialFeedProps> = ({ userId, feedType = 'all' }) => 
 
   if (error) {
     return (
-      <Box
-        p={4}
-        bg="red.50"
-        color="red.500"
-        borderRadius="md"
-        textAlign="center"
-      >
-        {error}
-      </Box>
+      <div className="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 p-4 rounded-lg text-center">
+        <p>{error}</p>
+      </div>
     );
   }
 
   if (feed.length === 0 && !isLoading) {
     return (
-      <Box
-        p={8}
-        textAlign="center"
-        bg={useColorModeValue('white', 'gray.800')}
-        borderRadius="lg"
-        shadow="sm"
-      >
-        <Text fontSize="lg" mb={4}>No activity in your feed yet</Text>
-        <Text color="gray.500">
+      <div className="text-center bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm">
+        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full 
+                      flex items-center justify-center">
+          <Clock className="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          No Activity Yet
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400">
           Follow some clubs or friends to see their activity here!
-        </Text>
-      </Box>
+        </p>
+      </div>
     );
   }
 
   return (
-    <VStack spacing={4} w="100%" align="stretch">
-      {feed.map((item) => (
-        <FeedItemCard key={item._id} item={item} />
-      ))}
+    <div className="space-y-6">
+      <AnimatePresence>
+        {feed.map((item) => (
+          <FeedItemCard key={item._id} item={item} />
+        ))}
+      </AnimatePresence>
+      
       {isLoading && (
-        <VStack spacing={4} w="100%">
+        <div className="space-y-4">
           {[1, 2].map((i) => (
-            <Skeleton key={i} height="200px" borderRadius="lg" />
+            <div
+              key={i}
+              className="bg-white dark:bg-gray-800 rounded-xl h-48 animate-pulse"
+            />
           ))}
-        </VStack>
+        </div>
       )}
+      
       {hasMore && !isLoading && (
-        <Button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={loadMore}
-          variant="outline"
-          colorScheme="blue"
-          size="lg"
-          width="100%"
+          className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-pink-500 text-white 
+                     rounded-xl font-medium shadow-sm hover:shadow-md transition-all duration-200
+                     flex items-center justify-center space-x-2"
         >
-          Load More
-        </Button>
+          <span>Load More</span>
+          <ChevronDown className="w-5 h-5" />
+        </motion.button>
       )}
-    </VStack>
+    </div>
   );
 };
 

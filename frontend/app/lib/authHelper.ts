@@ -36,6 +36,7 @@ export const loginClubUser = async (data: any) => {
         console.log('token saved in localStorage because of logging in');
     } catch (error) {
         console.error("Error submitting form:", error);
+        throw new Error(error);
     }  
 }
 
@@ -71,7 +72,7 @@ export const loginNormalUser = async (data: any) => {
         return res;
     } catch (error) {
         console.error("Error submitting form:", error);
-        return error;
+        throw new Error(error);
     }
 }
 

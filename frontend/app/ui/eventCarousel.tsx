@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, Users, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getClubEvents } from '@/app/lib/backendAPI';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const EventCarousel = ({ clubId }) => {
   const [events, setEvents] = useState([]);
@@ -40,7 +41,7 @@ const EventCarousel = ({ clubId }) => {
     );
   };
 
-  // Touch and mouse event handlers
+  // Touch and mouse handlers remain the same...
   const handleTouchStart = (e) => {
     const touchDown = e.touches[0].clientX;
     setTouchPosition(touchDown);
@@ -49,16 +50,11 @@ const EventCarousel = ({ clubId }) => {
 
   const handleTouchMove = (e) => {
     if (touchPosition === null) return;
-
     const currentTouch = e.touches[0].clientX;
     const diff = touchPosition - currentTouch;
-
-    if (Math.abs(diff) > 5) {  // Add a small threshold to prevent accidental swipes
-      if (diff > 0) {
-        nextSlide();
-      } else {
-        prevSlide();
-      }
+    if (Math.abs(diff) > 5) {
+      if (diff > 0) nextSlide();
+      else prevSlide();
       setTouchPosition(null);
     }
   };
@@ -75,16 +71,11 @@ const EventCarousel = ({ clubId }) => {
 
   const handleMouseMove = (e) => {
     if (!isDragging || touchPosition === null) return;
-
     const currentPosition = e.clientX;
     const diff = touchPosition - currentPosition;
-
-    if (Math.abs(diff) > 5) {  // Same threshold for mouse events
-      if (diff > 0) {
-        nextSlide();
-      } else {
-        prevSlide();
-      }
+    if (Math.abs(diff) > 5) {
+      if (diff > 0) nextSlide();
+      else prevSlide();
       setTouchPosition(null);
       setIsDragging(false);
     }
@@ -99,7 +90,10 @@ const EventCarousel = ({ clubId }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-4 border-blue-400/20"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-400 animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -107,8 +101,10 @@ const EventCarousel = ({ clubId }) => {
   // Error state
   if (error) {
     return (
-      <div className="text-red-500 text-center h-96 flex items-center justify-center">
-        {error}
+      <div className="h-96 flex items-center justify-center">
+        <div className="text-center p-8 rounded-xl bg-red-500/10 backdrop-blur-sm border border-red-500/20">
+          <span className="text-red-400">{error}</span>
+        </div>
       </div>
     );
   }
@@ -116,9 +112,11 @@ const EventCarousel = ({ clubId }) => {
   // No events state
   if (events.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-xl font-medium text-gray-900 mb-4">No events available</h3>
-        <p className="text-gray-500">This club hasn't posted any events yet.</p>
+      <div className="h-96 flex items-center justify-center">
+        <div className="text-center p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+          <h3 className="text-xl font-medium text-white mb-2">No events available</h3>
+          <p className="text-gray-400">This club hasn't posted any events yet.</p>
+        </div>
       </div>
     );
   }
@@ -126,27 +124,38 @@ const EventCarousel = ({ clubId }) => {
   return (
     <div className="relative max-w-6xl mx-auto px-4 py-12">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Upcoming Events</h2>
+      <motion.div 
+        className="flex justify-between items-center mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+          Upcoming Events
+        </h2>
         {events.length > 1 && (
           <div className="flex gap-4">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={prevSlide}
-              className="p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+              className="p-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-shadow"
               aria-label="Previous slide"
             >
               <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={nextSlide}
-              className="p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+              className="p-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-shadow"
               aria-label="Next slide"
             >
               <ChevronRight className="w-6 h-6" />
-            </button>
+            </motion.button>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Carousel */}
       <div 
@@ -161,102 +170,113 @@ const EventCarousel = ({ clubId }) => {
         onMouseLeave={handleMouseUp}
       >
         <div className="flex justify-center items-center h-96">
-        {events.map((event, index) => {
-        const diff = index - currentIndex;
-        let translateX = diff * 100;
-        let isVisible = Math.abs(diff) <= 1; // Only show current, next, and previous slides
+          <AnimatePresence mode="wait">
+            {events.map((event, index) => {
+              const diff = index - currentIndex;
+              let translateX = diff * 100;
+              let isVisible = Math.abs(diff) <= 1;
 
-        // Set the translate position based on relative index (no wrap-around)
-        if (!isVisible) {
-          return null; // Hide items that are not adjacent to the current slide
-        }
+              if (!isVisible) return null;
 
-        return (
-          <div
-            key={event.id}
-            className={`absolute w-80 transition-all duration-300 ease-out`}
-            style={{
-              transform: `translateX(${translateX}%) scale(${index === currentIndex ? 1 : 0.75})`,
-              opacity: index === currentIndex ? 1 : 0.5,
-              zIndex: index === currentIndex ? 20 : 10
-            }}
-          >
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-              {event.images && event.images[0] && (
-                <div className="relative h-48">
-                  <img
-                    src={event.images[0]}
-                    alt={event.name}
-                    className="w-full h-full object-cover"
-                    draggable="false"
-                  />
-                </div>
-              )}
-              
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {event.name}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {event.description}
-                </p>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center text-gray-600">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    <span className="text-sm">
-                      {new Date(event.date).toLocaleDateString()}
-                    </span>
+              return (
+                <motion.div
+                  key={event.id}
+                  className="absolute w-80"
+                  initial={{ scale: 0.75, opacity: 0 }}
+                  animate={{
+                    scale: index === currentIndex ? 1 : 0.75,
+                    opacity: index === currentIndex ? 1 : 0.5,
+                    x: `${translateX}%`,
+                  }}
+                  exit={{ scale: 0.75, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  style={{ zIndex: index === currentIndex ? 20 : 10 }}
+                >
+                  <div className="bg-black/40 backdrop-blur-sm rounded-xl overflow-hidden border border-white/10 shadow-xl">
+                    {event.images && event.images[0] && (
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={event.images[0]}
+                          alt={event.name}
+                          className="w-full h-full object-cover transform transition-transform duration-700 hover:scale-110"
+                          draggable="false"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      </div>
+                    )}
+                    
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        {event.name}
+                      </h3>
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                        {event.description}
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center text-gray-300">
+                          <Calendar className="w-5 h-5 mr-2 text-blue-400" />
+                          <span className="text-sm">
+                            {new Date(event.date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center text-gray-300">
+                          <Clock className="w-5 h-5 mr-2 text-blue-400" />
+                          <span className="text-sm">
+                            {new Date(event.startTime).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center text-gray-300">
+                          <Users className="w-5 h-5 mr-2 text-blue-400" />
+                          <span className="text-sm">
+                            {event.availableTickets} tickets available
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center text-gray-300">
+                          <DollarSign className="w-5 h-5 mr-2 text-blue-400" />
+                          <span className="text-sm">
+                            ${parseFloat(event.price).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {index === currentIndex && (
+                        <motion.button
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-6 w-full bg-gradient-to-r from-blue-400 to-blue-500 text-white py-2 px-4 rounded-full
+                                   transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25
+                                   focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+                          onClick={() => {/* Add your ticket purchase logic here */}}
+                        >
+                          Get Tickets
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center text-gray-600">
-                    <Clock className="w-5 h-5 mr-2" />
-                    <span className="text-sm">
-                      {new Date(event.startTime).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center text-gray-600">
-                    <Users className="w-5 h-5 mr-2" />
-                    <span className="text-sm">
-                      {event.availableTickets} tickets available
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center text-gray-600">
-                    <DollarSign className="w-5 h-5 mr-2" />
-                    <span className="text-sm">
-                      ${parseFloat(event.price).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                
-                {index === currentIndex && (
-                  <button
-                    className="mt-6 w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors"
-                    onClick={() => {/* Add your ticket purchase logic here */}}
-                  >
-                    Get Tickets
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* Dots indicator */}
       {events.length > 1 && (
-        <div className="flex justify-center gap-2 mt-8">
+        <div className="flex justify-center gap-3 mt-8">
           {events.map((_, index) => (
-            <button
+            <motion.button
               key={index}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => setCurrentIndex(index)}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentIndex 
+                  ? 'bg-gradient-to-r from-blue-400 to-blue-500 w-4' 
+                  : 'bg-white/20'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />

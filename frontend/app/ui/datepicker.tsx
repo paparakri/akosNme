@@ -177,10 +177,10 @@ const ChakraDatePicker = ({
                 variant="ghost"
                 w="full"
                 onClick={() => handleDateSelect(day)}
-                bg={selectedDate && isSameDay(day, selectedDate) ? 'orange.500' : 'transparent'}
+                bg={selectedDate && isSameDay(day, selectedDate) ? 'blue.500' : 'transparent'}
                 color={selectedDate && isSameDay(day, selectedDate) ? 'white' : 'inherit'}
                 _hover={{
-                  bg: selectedDate && isSameDay(day, selectedDate) ? 'orange.600' : 'orange.100'
+                  bg: selectedDate && isSameDay(day, selectedDate) ? 'blue.600' : 'blue.100'
                 }}
               >
                 {format(day, 'd')}

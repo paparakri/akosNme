@@ -74,7 +74,7 @@ const AddFriendButton: React.FC<AddFriendButtonProps> = ({
         <Button
           size={size}
           variant="outline"
-          colorScheme="orange"
+          colorScheme="blue"
           leftIcon={<Icon as={UserPlus} />}
           isDisabled
         >

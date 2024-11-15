@@ -101,7 +101,7 @@ const FriendRequests: React.FC<FriendRequestsProps> = ({
               <Text fontWeight="medium">
                 {request.firstName} {request.lastName}
               </Text>
-              <Badge colorScheme="orange">New Request</Badge>
+              <Badge colorScheme="blue">New Request</Badge>
             </HStack>
             <Text fontSize="sm" color="gray.500">
               @{request.username}

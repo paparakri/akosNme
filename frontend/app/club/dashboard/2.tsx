@@ -85,7 +85,7 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({ data }) => {
           <Text width="100px" fontSize="sm">{item.date}</Text>
           <Box 
             height="20px" 
-            bg="orange.400" 
+            bg="blue.400" 
             width={`${(item.count / maxCount) * 100}%`}
           />
           <Text fontSize="sm">{item.count}</Text>
@@ -195,7 +195,7 @@ const ClubOwnerDashboard = () => {
                           <NumberInputField name="formattedPrice" value={clubData.formattedPrice} onChange={handleInputChange} />
                         </NumberInput>
                       </FormControl>
-                      <Button colorScheme="orange" onClick={handleSave}>Save Changes</Button>
+                      <Button colorScheme="blue" onClick={handleSave}>Save Changes</Button>
                     </VStack>
                   ) : (
                     <>
@@ -208,7 +208,7 @@ const ClubOwnerDashboard = () => {
                         <Text fontWeight="bold">Rating:</Text>
                         <HStack>
                           {Array(5).fill('').map((_, i) => (
-                            <StarIcon key={i} color={i < clubData.rating ? "orange.500" : "gray.300"} />
+                            <StarIcon key={i} color={i < clubData.rating ? "blue.500" : "gray.300"} />
                           ))}
                         </HStack>
                       </HStack>

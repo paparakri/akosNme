@@ -72,7 +72,7 @@ export const OpeningHoursPicker: React.FC<OpeningHoursPickerProps> = ({ value, o
               <Switch
                 isChecked={dayValue.isOpen}
                 onChange={(e) => handleDayChange(day, 'isOpen', e.target.checked)}
-                colorScheme="orange"
+                colorScheme="blue"
               />
               <Input
                 type='time'
@@ -127,7 +127,7 @@ export const OpeningHoursInfo = ({ label, value }: { label: string; value: strin
           {valueArray.map((day: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<React.AwaitedReactNode> | null | undefined, index: React.Key | null | undefined) => {
             if (typeof day === 'string') {
               return (
-                <Text textAlign={'right'} key={index} color={day.startsWith(today) ? 'orange.500' : 'inherit'}>
+                <Text textAlign={'right'} key={index} color={day.startsWith(today) ? 'blue.500' : 'inherit'}>
                   {day}
                 </Text>
               );

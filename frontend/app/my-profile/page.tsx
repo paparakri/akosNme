@@ -1,239 +1,203 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Flex,
-  VStack,
-  HStack,
-  Text,
-  Heading,
-  Avatar,
-  SimpleGrid,
-  Stat,
-  StatLabel,
-  StatNumber,
-  Divider,
-  useColorModeValue,
-  Icon,
-  Image,
-  Button,
-  Input,
-  Textarea,
-  useToast,
-} from '@chakra-ui/react';
-import { MdEmail, MdPhone, MdCalendarToday, MdLocationOn, MdEdit, MdSave, MdClose } from 'react-icons/md';
-import { fetchNormalUser, switchUsername2Id, updateNormalUser } from '../lib/backendAPI';
+import { Camera, Edit2, Mail, Phone, Calendar, MapPin, Award, Save, X } from 'lucide-react';
 import { getCurrentUser } from '../lib/userStatus';
-import SplashScreen from '../ui/splashscreen';
+import { fetchNormalUser, switchUsername2Id, updateNormalUser } from '../lib/backendAPI';
 
-interface UserData {
-  username: string;
-  picturePath: string;
-  firstName: string;
-  lastName: string;
-  bio: string;
-  createdAt: string;
-  loyaltyPoints: number;
-  email: string;
-  phoneNumber: string;
-  dateOfBirth: string;
-}
-
-const UserProfilePage: React.FC = () => {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editedUser, setEditedUser] = useState<UserData | null>(null);
-
-  const toast = useToast();
-
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const tabBgColor = useColorModeValue('gray.100', 'gray.700');
+const UserProfilePage = () => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState(null);
+  const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
-          throw new Error('No current user found');
-        }
-        const userId = await switchUsername2Id(currentUser.username);
-        const userData = await fetchNormalUser(userId);
-        setUser(userData);
-      } catch (err: unknown) {
-        console.error('Error fetching user data:', err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUser();
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return 'N/A';
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-    setEditedUser(user);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditedUser(prev => prev ? { ...prev, [name]: value } : null);
-  };
-
-  const handleSave = async () => {
-    if (!editedUser) return;
+  const fetchUser = async () => {
     try {
-      const updatedUser = await updateNormalUser(await switchUsername2Id(user?.username || ""), editedUser);
-      setUser(updatedUser);
-      setIsEditing(false);
-      toast({
-        title: "Profile updated",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      toast({
-        title: "Error updating profile",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      const currentUser = await getCurrentUser();
+      if (!currentUser) throw new Error('No current user found');
+      const userId = await switchUsername2Id(currentUser.username);
+      const userData = await fetchNormalUser(userId);
+      setUser(userData);
+      setEditedUser(userData);
+    } catch (err:any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isLoading) return (
-    <Box marginY={'30vh'}>
-      <SplashScreen />
-    </Box>
-  );
-  if (error) return <Text color="red.500">Error: {error}</Text>;
-  if (!user) return <Text>No user data available</Text>;
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">
+    <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+  </div>;
+
+  const handleSave = async () => {
+    try {
+      const userId = await switchUsername2Id(user?.username || "");
+      const updatedUser = await updateNormalUser(userId, editedUser);
+      setUser(updatedUser);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
 
   return (
-    <Box width="100%" maxWidth="1200px" mx="auto" px={4} my={20}>
-      {/* Cover Photo */}
-      <Box position="relative" h="300px" mb={16}>
-        <Image
-          src="profilePage.jpeg"
-          alt="Cover Photo"
-          objectFit="cover"
-          w="100%"
-          h="100%"
-          borderRadius="lg"
-        />
-        <Avatar
-          size="2xl"
-          name={user?.username}
-          src={user?.picturePath}
-          position="absolute"
-          bottom="-48px"
-          left="50%"
-          transform="translateX(-50%)"
-          border="4px solid white"
-        />
-      </Box>
-
-      <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
-        {/* User Name and Username */}
-        <Box bg={bgColor} borderRadius="lg" overflow="hidden" boxShadow="md" p={6} flex={{ md: 1 }}>
-          <VStack spacing={2} align="left">
-            {isEditing ? (
-              <>
-                <Input
-                  name="firstName"
-                  value={editedUser?.firstName || ''}
-                  onChange={handleInputChange}
-                  placeholder="First Name"
+    <div className="min-h-screen bg-black text-white">
+      {/* Header Section with Parallax Effect */}
+      <div className="relative h-[50vh] overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: 'url("/profilePage.jpeg")',
+            transform: `translateY(${scrollY * 0.5}px)`,
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black" />
+        </div>
+        
+        {/* Profile Information Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-8">
+          <div className="max-w-7xl mx-auto flex items-end space-x-8">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full border-4 border-blue-400 overflow-hidden">
+                <img 
+                  src={user?.picturePath || '/default-avatar.svg'} 
+                  alt={user?.username}
+                  className="w-full h-full object-cover"
                 />
-                <Input
-                  name="lastName"
-                  value={editedUser?.lastName || ''}
-                  onChange={handleInputChange}
-                  placeholder="Last Name"
-                />
-              </>
-            ) : (
-              <Heading as="h2" size="xl">{`${user?.firstName} ${user?.lastName}`}</Heading>
-            )}
-            <Text color="gray.500" fontSize="lg">@{user?.username}</Text>
-          </VStack>
-        </Box>
+                <button className="absolute bottom-2 right-2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors">
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 mb-4">
+              <div className="flex items-center space-x-4">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                  {`${user?.firstName} ${user?.lastName}`}
+                </h1>
+                <span className="px-3 py-1 rounded-full bg-blue-400/10 text-blue-400 text-sm">
+                  @{user?.username}
+                </span>
+              </div>
+              <p className="mt-2 text-gray-300 max-w-2xl">{user?.bio}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* User Info */}
-        <Box bg={bgColor} borderRadius="lg" overflow="hidden" boxShadow="md" flex={{ md: 2 }}>
-          <VStack align="stretch" spacing={6} p={6}>
-            {isEditing ? (
-              <Textarea
-                name="bio"
-                value={editedUser?.bio || ''}
-                onChange={handleInputChange}
-                placeholder="Bio"
-              />
-            ) : (
-              <Text fontSize="lg">{user?.bio}</Text>
-            )}
-            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={6}>
-              <Stat>
-                <StatLabel fontSize="md">Member Since</StatLabel>
-                <StatNumber>{formatDate(user?.createdAt || '')}</StatNumber>
-              </Stat>
-              <Stat>
-                <StatLabel fontSize="md">Loyalty Points</StatLabel>
-                <StatNumber>{user?.loyaltyPoints}</StatNumber>
-              </Stat>
-            </SimpleGrid>
-            <Divider />
-            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4}>
-              <HStack spacing={4}>
-                <Icon as={MdEmail} color="gray.500" boxSize={5} />
-                  <Text>{user?.email}</Text>
-              </HStack>
-              <HStack spacing={4}>
-                <Icon as={MdPhone} color="gray.500" boxSize={5} />
-                  <Text>{user?.phoneNumber}</Text>
-              </HStack>
-              <HStack spacing={4}>
-                <Icon as={MdCalendarToday} color="gray.500" boxSize={5} />
-                  <Text>Born on {formatDate(user?.dateOfBirth || '')}</Text>
-              </HStack>
-              <HStack spacing={4}>
-                <Icon as={MdLocationOn} color="gray.500" boxSize={5} />
-                <Text>Athens, Greece</Text>
-              </HStack>
-            </SimpleGrid>
-          </VStack>
-        </Box>
-      </Flex>
-      
-      {/* Edit/Save Button */}
-      <Box mt={6} textAlign="right">
-        {isEditing ? (
-          <>
-            <Button leftIcon={<MdSave />} colorScheme="green" onClick={handleSave} mr={2}>
-              Save Changes
-            </Button>
-            <Button leftIcon={<MdClose />} colorScheme="red" onClick={handleEditToggle}>
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <Button leftIcon={<MdEdit />} colorScheme="blue" onClick={handleEditToggle}>
-            Edit Profile
-          </Button>
-        )}
-      </Box>
-    </Box>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Stats Card */}
+          <div className="bg-white/5 rounded-2xl p-6 backdrop-blur-lg border border-white/10">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Statistics</h3>
+                <Award className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-white/5">
+                  <div className="text-sm text-gray-400">Loyalty Points</div>
+                  <div className="text-2xl font-bold text-blue-400">{user?.loyaltyPoints}</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5">
+                  <div className="text-sm text-gray-400">Events Attended</div>
+                  <div className="text-2xl font-bold text-purple-400">--(Doesn't Work)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="md:col-span-2 bg-white/5 rounded-2xl p-6 backdrop-blur-lg border border-white/10">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-lg font-semibold">Contact Information</h3>
+              {isEditing ? (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save</span>
+                  </button>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 rounded-lg bg-blue-400/10">
+                  <Mail className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">Email</div>
+                  <div className="text-white">{user?.email}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="p-3 rounded-lg bg-purple-400/10">
+                  <Phone className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">Phone</div>
+                  <div className="text-white">{user?.phoneNumber}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="p-3 rounded-lg bg-blue-400/10">
+                  <Calendar className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">Birthday</div>
+                  <div className="text-white">{new Date(user?.dateOfBirth).toLocaleDateString()}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="p-3 rounded-lg bg-purple-400/10">
+                  <MapPin className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">Location</div>
+                  <div className="text-white">Athens, Greece</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

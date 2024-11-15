@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const { register, login, loginClub } = require('../controllers/auth.js');
 const { getReviewById } = require('../controllers/reviews');
-const { addReservation, removeReservation } = require('../controllers/reservations');
+const { addReservation, removeReservation, updateReservation } = require('../controllers/reservations');
 const { getUserList } = require('../controllers/recs');
 const { geocode, reverseGeocode } = require('../controllers/geocode.js');
 const { getImage, uploadImage } = require('../controllers/images.js');
@@ -67,6 +67,7 @@ router.route('/review/:id')
 
 router.route('/reservations')
     .post(addReservation)
+    .put(updateReservation)
     .delete(removeReservation);
 
 router.route('/ClubLogin')

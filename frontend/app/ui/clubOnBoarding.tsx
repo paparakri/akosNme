@@ -130,7 +130,7 @@ const ClubOnboarding = ({ clubData, setClubData, onComplete }) => {
         <Button onClick={handlePrevious} isDisabled={currentStep === 0}>
           Previous
         </Button>
-        <Button onClick={handleNext} colorScheme="orange">
+        <Button onClick={handleNext} colorScheme="blue">
           {currentStep === steps.length - 1 ? 'Complete' : 'Next'}
         </Button>
       </Flex>

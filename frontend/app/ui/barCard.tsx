@@ -1,137 +1,129 @@
-import React from "react";
-import {  Box, Flex, Badge, Text } from '@chakra-ui/react';
-import { BsStar, BsStarFill, BsStarHalf } from 'react-icons/bs';
-import { StarIcon } from "@chakra-ui/icons";
-import { Image as ChakraImage } from "@chakra-ui/react";
+import React, { useState } from "react";
+import { MapPin, Star } from "lucide-react";
+import Link from "next/link";
+import { getDefaultClubImage } from "../lib/imageSelector";
+import { features } from "process";
 
 interface BarCardProps {
-  imageUrl: string,
-  imageAlt: string,
-  title: string,
-  description: string,
-  formattedPrice: number,
-  reviewCount: number,
-  rating: number,
-  location: string
-};
-
-interface RatingProps {
-  rating: number
-  numReviews: number
+  imageUrl: string;
+  imageAlt: string;
+  title: string;
+  description: string;
+  formattedPrice: number;
+  reviewCount: number;
+  rating: number;
+  location: string;
+  genres?: string[];
+  username: string;
+  features: string[];
+  capacity: number;
+  dressCode: string;
 }
 
-function Rating({ rating, numReviews }: RatingProps) {
-  return (
-    <Box display="flex" alignItems="center">
-      {Array(5)
-        .fill('')
-        .map((_, i) => {
-          const roundedRating = Math.round(rating * 2) / 2
-          if (roundedRating - i >= 1) {
-            return (
-              <BsStarFill
-                key={i}
-                style={{ marginLeft: '1' }}
-                color={i < rating ? 'orange.500' : 'gray.300'}
-              />
-            )
-          }
-          if (roundedRating - i === 0.5) {
-            return <BsStarHalf key={i} style={{ marginLeft: '1' }} />
-          }
-          return <BsStar key={i} style={{ marginLeft: '1' }} />
-        })}
-      <Box as="span" ml="2" color="gray.600" fontSize="sm">
-        ({numReviews})
-      </Box>
-    </Box>
-  )
-}
-
-const BarCard: React.FC<BarCardProps> = ({imageUrl, imageAlt, title, description, formattedPrice, reviewCount, rating, location}) => {
+const BarCard: React.FC<BarCardProps> = ({
+  imageUrl,
+  imageAlt,
+  title,
+  description,
+  formattedPrice,
+  reviewCount,
+  rating,
+  location,
+  genres,
+  username,
+  features,
+  capacity,
+  dressCode
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-        <Box
-          bg="white"
-          _dark={{
-            bg: "gray.800",
-          }}
-          maxW="sm"
-          borderWidth="1px"
-          rounded="lg"
-          shadow="lg"
-          marginRight={3}
-          marginLeft={3}
-          marginBottom={5}
-          marginTop={5}
-          boxShadow={'2xl'}
-        >
-          <ChakraImage
-            src={imageUrl}
-            alt={imageAlt}
-            minW={'100%'}
-            maxH={'20vh'}
-            roundedTop="inherit"
-            objectFit="cover"
-          />
-  
-          <Box p="6">
-            <Box display="flex" alignItems="baseline">
-              <Badge rounded="full" px="2" colorScheme="orange">
-                New
-              </Badge>
-              <Box
-                color="gray.500"
-                fontWeight="semibold"
-                letterSpacing="wide"
-                fontSize="xs"
-                textTransform="uppercase"
-                ml="2"
-              >
-                {location}
-              </Box>
-            </Box>
-  
-            <Text
-              mt="1"
-              fontWeight="semibold"
-              as="h4"
-              lineHeight="tight"
-              noOfLines={1}
-            >
-              {title}
-            </Text>
-            <Text 
-              mt="1"
-              fontStyle={"italic"}
-              lineHeight="tight"
-              noOfLines={2}>
-              {description}
-            </Text>
-            <Box>
-              ${formattedPrice}
-              <Box as="span" color="gray.600" fontSize="sm">
-                (min)
-              </Box>
-            </Box>
-  
-            <Box display="flex" mt="2" alignItems="center">
-              {Array(5)
-                .fill("")
-                .map((_, i) => (
-                  <StarIcon
+    <Link
+      href={`/club/${username}`}
+      className="relative block group bg-white/5 rounded-3xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300"
+    >
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+        style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : `url('/default-images/${
+          getDefaultClubImage({
+            genres: genres,
+            features: features,
+            formattedPrice: formattedPrice,
+            capacity: capacity,
+            dressCode: dressCode,
+            description: description
+          })
+        }.jpg')` }}
+      />
+      
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black" />
+      
+      {/* Price Tag */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="px-3 py-1 bg-purple-600 rounded-full text-sm font-semibold text-white shadow-lg">
+          ${formattedPrice}+
+        </div>
+      </div>
+      
+      {/* Content Container */}
+      <div className="relative h-80">
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="space-y-2">
+            {/* Tags */}
+            <div className="flex items-center space-x-2">
+              {genres?.[0] && (
+                <span className="px-2 py-1 bg-white/10 rounded-full text-xs text-white">
+                  {genres[0]}
+                </span>
+              )}
+              <span className="px-2 py-1 bg-green-600/20 text-green-400 rounded-full text-xs">
+                Open Now
+              </span>
+            </div>
+            
+            {/* Title and Description */}
+            <h3 className="text-xl font-bold text-white">{title}</h3>
+            <p className="text-gray-300 text-sm line-clamp-2">{description}</p>
+            
+            {/* Rating and Location */}
+            <div className="flex items-center justify-between pt-4">
+              <div className="flex items-center space-x-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
                     key={i}
-                    color={i < rating ? "orange.500" : "gray.300"}
+                    className={`w-4 h-4 ${
+                      i < rating
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-600'
+                    }`}
                   />
                 ))}
-              <Box as="span" ml="2" color="gray.600" fontSize="sm">
-                ({reviewCount})
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-    );
-  };
-    
+                <span className="text-gray-300 text-sm ml-2">
+                  ({reviewCount})
+                </span>
+              </div>
+              
+              <div className="flex items-center text-gray-300">
+                <MapPin className="w-4 h-4 mr-1" />
+                <span className="text-sm">{location || 'Location unavailable'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hover Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="w-full py-3 bg-white text-purple-900 rounded-xl font-semibold hover:bg-gray-100 transition-colors text-center">
+            View Details
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
 
 export default BarCard;

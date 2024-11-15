@@ -37,7 +37,7 @@ export default function FaqPage() {
     return (
         <Box width="container.md">
         
-        <Heading as="h1" color="orange.500">
+        <Heading as="h1" color="blue.500">
             Questions?
         </Heading>
 
@@ -49,7 +49,7 @@ export default function FaqPage() {
             <AccordionItem key={faq.question}>
             
                 <AccordionButton>
-                <Box textAlign="left" color="orange.500">
+                <Box textAlign="left" color="blue.500">
                     {faq.question}  
                 </Box>
                 </AccordionButton>

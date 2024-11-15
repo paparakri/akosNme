@@ -1,6 +1,8 @@
 const NormalUser = require('../models/normalUser');
+const FriendRequest = require('../models/friendRequest');
 
 // Get all friends of a user
+
 const getFriends = async (req, res) => {
     try {
         const userId = req.params.id;
@@ -10,22 +12,27 @@ const getFriends = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Get detailed friend information
+        // Fetch all friend details using the IDs stored in user.friends array
         const friends = await Promise.all(
             user.friends.map((friendId) => NormalUser.findById(friendId))
         );
 
-        // Format the response to only include necessary fields
-        const formattedFriends = friends.map(friend => ({
-            _id: friend._id,
-            username: friend.username,
-            firstName: friend.firstName,
-            lastName: friend.lastName,
-            picturePath: friend.picturePath
-        }));
+        // Filter out any null values (in case some friends were deleted)
+        // and format the response to only include necessary fields
+        const formattedFriends = friends
+            .filter(friend => friend !== null)
+            .map(friend => ({
+                _id: friend._id,
+                username: friend.username,
+                firstName: friend.firstName,
+                lastName: friend.lastName,
+                picturePath: friend.picturePath || null
+            }));
 
+        console.log('Formatted friends:', formattedFriends);
         res.status(200).json(formattedFriends);
     } catch (err) {
+        console.error('Error in getFriends:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -34,23 +41,21 @@ const getFriends = async (req, res) => {
 const getFriendRequests = async (req, res) => {
     try {
         const userId = req.params.id;
-        const user = await NormalUser.findById(userId);
-        
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+        const requests = await FriendRequest.find({
+            receiver: userId,
+            status: 'pending'
+        }).populate('sender', 'username firstName lastName picturePath');
 
-        // Get detailed request information
-        const requests = await Promise.all(
-            user.friendRequests.map((requestId) => NormalUser.findById(requestId))
-        );
-
-        const formattedRequests = requests.map(requester => ({
-            _id: requester._id,
-            username: requester.username,
-            firstName: requester.firstName,
-            lastName: requester.lastName,
-            picturePath: requester.picturePath
+        const formattedRequests = requests.map(request => ({
+            requestId: request._id,
+            sender: {
+                _id: request.sender._id,
+                username: request.sender.username,
+                firstName: request.sender.firstName,
+                lastName: request.sender.lastName,
+                picturePath: request.sender.picturePath
+            },
+            createdAt: request.createdAt
         }));
 
         res.status(200).json(formattedRequests);
@@ -80,18 +85,27 @@ const sendFriendRequest = async (req, res) => {
             return res.status(400).json({ error: "Already friends" });
         }
 
-        // Check if request already sent
-        if (receiver.friendRequests.includes(senderId) || 
-            sender.sentFriendRequests.includes(receiverId)) {
-            return res.status(400).json({ error: "Friend request already sent" });
+        // Check if request already exists
+        const existingRequest = await FriendRequest.findOne({
+            $or: [
+                { sender: senderId, receiver: receiverId },
+                { sender: receiverId, receiver: senderId }
+            ],
+            status: 'pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({ error: "Friend request already exists" });
         }
 
-        // Add request to both users
-        receiver.friendRequests.push(senderId);
-        sender.sentFriendRequests.push(receiverId);
+        // Create new friend request
+        const newRequest = new FriendRequest({
+            sender: senderId,
+            receiver: receiverId,
+            status: 'pending'
+        });
 
-        await Promise.all([receiver.save(), sender.save()]);
-
+        await newRequest.save();
         res.status(200).json({ message: "Friend request sent successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -102,31 +116,36 @@ const sendFriendRequest = async (req, res) => {
 const acceptFriendRequest = async (req, res) => {
     try {
         const userId = req.params.id;
-        const requesterId = req.params.requestId;
+        const requestId = req.params.requestId;
+
+        const request = await FriendRequest.findById(requestId);
+        console.log("Accept friend request response: ", request);
+        if (!request || request.receiver.toString() !== userId || request.status !== 'pending') {
+            return res.status(404).json({ error: "Valid friend request not found" });
+        }
 
         const [user, requester] = await Promise.all([
             NormalUser.findById(userId),
-            NormalUser.findById(requesterId)
+            NormalUser.findById(request.sender)
         ]);
 
         if (!user || !requester) {
             return res.status(404).json({ error: "One or both users not found" });
         }
 
-        // Verify request exists
-        if (!user.friendRequests.includes(requesterId)) {
-            return res.status(400).json({ error: "Friend request not found" });
-        }
+        // Update request status
+        request.status = 'accepted';
+        request.respondedAt = new Date();
 
         // Add each user to the other's friends list
-        user.friends.push(requesterId);
+        user.friends.push(request.sender);
         requester.friends.push(userId);
 
-        // Remove request from both users
-        user.friendRequests = user.friendRequests.filter(id => id.toString() !== requesterId);
-        requester.sentFriendRequests = requester.sentFriendRequests.filter(id => id.toString() !== userId);
-
-        await Promise.all([user.save(), requester.save()]);
+        await Promise.all([
+            request.save(),
+            user.save(),
+            requester.save()
+        ]);
 
         res.status(200).json({ message: "Friend request accepted" });
     } catch (err) {
@@ -138,22 +157,17 @@ const acceptFriendRequest = async (req, res) => {
 const rejectFriendRequest = async (req, res) => {
     try {
         const userId = req.params.id;
-        const requesterId = req.params.requestId;
+        const requestId = req.params.requestId;
 
-        const [user, requester] = await Promise.all([
-            NormalUser.findById(userId),
-            NormalUser.findById(requesterId)
-        ]);
-
-        if (!user || !requester) {
-            return res.status(404).json({ error: "One or both users not found" });
+        const request = await FriendRequest.findById(requestId);
+        if (!request || request.receiver.toString() !== userId || request.status !== 'pending') {
+            return res.status(404).json({ error: "Valid friend request not found" });
         }
 
-        // Remove request from both users
-        user.friendRequests = user.friendRequests.filter(id => id.toString() !== requesterId);
-        requester.sentFriendRequests = requester.sentFriendRequests.filter(id => id.toString() !== userId);
-
-        await Promise.all([user.save(), requester.save()]);
+        // Update request status
+        request.status = 'rejected';
+        request.respondedAt = new Date();
+        await request.save();
 
         res.status(200).json({ message: "Friend request rejected" });
     } catch (err) {

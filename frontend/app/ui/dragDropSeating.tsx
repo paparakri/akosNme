@@ -299,7 +299,7 @@ export const DragDropSeatingCanvas: React.FC<{id: string}> = ({id}) => {
 
   return (
     <Box maxW="8xl" mx="auto" pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-      <Heading as="h1" size="xl" mb={6} color="orange.400">
+      <Heading as="h1" size="xl" mb={6} color="blue.400">
         Table Layout Manager
       </Heading>
       
@@ -340,7 +340,7 @@ export const DragDropSeatingCanvas: React.FC<{id: string}> = ({id}) => {
             <Button
               leftIcon={<Plus />}
               onClick={addTable}
-              colorScheme="orange"
+              colorScheme="blue"
             >
               Add Table
             </Button>
