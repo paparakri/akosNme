@@ -14,6 +14,8 @@ import EnhancedSplashScreen from "../ui/splashscreen";
 import EnhancedMasonryGrid from "../ui/responsiveMasonryGrid";
 import { ProtectedRoute, UnprotectedRoute, useIsUserSignedIn } from "../lib/userStatus";
 import { fetchClubByName, fetchFeaturedClubsDetails } from "../lib/backendAPI";
+import PaginatedBarCards from "../ui/paginatedBarCards";
+import { useHeroStats } from "../lib/useHeroStats";
 
 interface BarCardData {
   _id: string;
@@ -46,6 +48,13 @@ export default function Home() {
     lat: 37.983810,
     lng: 23.727539
   });
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [hasSetLocation, setHasSetLocation] = useState(false);
+
+  const { eventNumber, venueNumber, nearVenueNumber } = useHeroStats(barCards, {
+    lat: coordinates.lat ?? 0,
+    lng: coordinates.lng ?? 0
+  });
 
   // Parallax and scroll effects
   const headerRef = useRef(null);
@@ -58,41 +67,50 @@ export default function Home() {
 
   const headerOpacity = useTransform(scrollY, [0, 200], [1, 0.97]);
   const headerScale = useTransform(scrollY, [0, 200], [1, 0.97]);
-  const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
   
   const toast = useToast();
   const isUserSignedIn = useIsUserSignedIn();
 
-  useEffect(() => {
-    const getUserLocation = async () => {
-      try {
-        if ("geolocation" in navigator) {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject);
-          });
-          
-          setCoordinates({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        } else {
-          throw new Error("Geolocation not supported");
-        }
-      } catch (error) {
-        console.warn("Location access:", error);
+  const getUserLocation = async () => {
+    setIsLoadingLocation(true);
+    try {
+      if ("geolocation" in navigator) {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        
+        setCoordinates({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        
+        setHasSetLocation(true);
+        
         toast({
-          title: "Using Default Location",
-          description: "We'll show you the best spots in the default area.",
-          status: "info",
+          title: "Location Updated",
+          description: "Showing venues near you.",
+          status: "success",
           duration: 5000,
           isClosable: true,
           position: "bottom-right",
         });
+      } else {
+        throw new Error("Geolocation not supported");
       }
-    };
-
-    getUserLocation();
-  }, [toast]);
+    } catch (error) {
+      console.warn("Location access:", error);
+      toast({
+        title: "Location Access Failed",
+        description: "We'll show you the best spots in the default area.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-right",
+      });
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
 
   useEffect(() => {
     const getBarCards = async () => {
@@ -140,7 +158,6 @@ export default function Home() {
         <div className="fixed inset-0 z-0">
           <motion.div 
             className="absolute inset-0 opacity-30"
-            style={{ y: backgroundY }}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-black to-blue-900/40" />
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(120,41,190,0.1),rgba(0,0,0,0)_50%)]" />
@@ -148,13 +165,16 @@ export default function Home() {
         </div>
 
         {!isUserSignedIn && (
-          <UnprotectedRoute>
             <EnhancedHero />
-          </UnprotectedRoute>
         )}
 
         {isUserSignedIn && (
-            <MiniHero />
+            <MiniHero
+              eventNumber={isLoading ? 0 : eventNumber}
+              venueNumber={isLoading ? 0 : venueNumber}
+              nearVenueNumber={isLoading ? 0 : nearVenueNumber}
+              hasSetLocation={hasSetLocation}
+            />
         )}
         
         {/* Enhanced Search Section with Backdrop Blur */}
@@ -223,74 +243,36 @@ export default function Home() {
                         Featured Venues
                       </span>
                     </h2>
-                    <div className="flex items-center justify-center space-x-2 text-gray-400">
+                    <div className="flex items-center justify-center space-x-4 text-gray-400">
                       <MapPin className="w-5 h-5" />
-                      <span>Curated selection based on your location</span>
+                      <span>
+                        {hasSetLocation ? 'Showing featured venues near you' : 'Showing featured venues near Athens, Greece'}
+                      </span>
+                      {!hasSetLocation && (
+                        <motion.button
+                          onClick={getUserLocation}
+                          disabled={isLoadingLocation}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          initial={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="group relative px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full
+                                     overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-50 blur transition duration-500" />
+                          <span className="relative flex items-center space-x-2 text-white">
+                            {isLoadingLocation ? (
+                              <span>Updating...</span>
+                            ) : (
+                              <span>Use My Location</span>
+                            )}
+                          </span>
+                        </motion.button>
+                      )}
                     </div>
                   </motion.div>
 
-                  <EnhancedMasonryGrid>
-                    {barCards.slice(0, 8 * page).map((card, index) => (
-                      <motion.div
-                        key={card._id.toString()}
-                        variants={{
-                          hidden: { opacity: 0, y: 20 },
-                          visible: { opacity: 1, y: 0 }
-                        }}
-                        whileHover={{ y: -10 }}
-                        onHoverStart={() => setHoveredCard(card._id)}
-                        onHoverEnd={() => setHoveredCard(null)}
-                      >
-                        <Link href={`/club/${card.username}`}>
-                          <div className="relative group">
-                            {/* Card glow effect */}
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-50 blur transition duration-500" />
-                            <div className="relative">
-                              <EnhancedBarCard
-                                features={card.features}
-                                capacity={card.capacity}
-                                dressCode={card.dressCode}
-                                username={card.username}
-                                imageUrl={card.images ? card.images[0].toString() : '/default-club.jpeg'}
-                                imageAlt={card.displayName}
-                                title={card.displayName}
-                                description={card.description}
-                                formattedPrice={card.formattedPrice}
-                                reviewCount={card.reviews.length}
-                                location={card.address}
-                                rating={card.rating}
-                              />
-                            </div>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </EnhancedMasonryGrid>
-
-                  {barCards.length > 8 * page && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="flex justify-center mt-16"
-                    >
-                      <motion.button
-                        onClick={() => setPage(prev => prev + 1)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full
-                                 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        {/* Button glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-50 blur transition duration-500" />
-                        
-                        <span className="relative flex items-center space-x-2 text-white">
-                          <span>Discover More Venues</span>
-                          <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
-                        </span>
-                      </motion.button>
-                    </motion.div>
-                  )}
+                  <PaginatedBarCards results={barCards} />
                 </motion.div>
               ) : (
                 <motion.div

@@ -37,7 +37,7 @@ const Footer = () => {
           <div className="space-y-6">
             <div className="flex items-center">
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                Pulse
+                To Kone
               </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
@@ -58,7 +58,7 @@ const Footer = () => {
         <div className="border-t border-white/10 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} Pulse. All rights reserved.
+              © {new Date().getFullYear()} To Kone. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">

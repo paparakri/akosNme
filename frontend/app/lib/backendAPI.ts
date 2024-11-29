@@ -147,11 +147,7 @@ export const fetchClubReservations = async (id: string) => {
 //CLUBS
 export const fetchClubInfo = async (user: any) => {
     try {
-      const response = await axios.get(`http://127.0.0.1:3500/club/${user}`, {
-        headers: {
-          'username': user
-        }
-      });
+      const response = await axios.get(`http://127.0.0.1:3500/club/${user}`);
       console.log("Response Data from fetchClubInfo: ");
       console.log(response.data);
       return response.data;
@@ -232,6 +228,16 @@ export const updateClub = async (id: string, clubData: any) => {
         return response.data;
     } catch (error) {
         console.error(`Error updating club ${id} info: `, error);
+        return null;
+    }
+}
+
+export const fetchClubFollowers = async (id: string) => {
+    try{
+        const club = await fetchClubInfo(id);
+        return club.followers;
+    } catch (e) {
+        console.error(e);
         return null;
     }
 }
@@ -359,6 +365,26 @@ export const deleteEvent = async (clubId: string, eventId: string) => {
         return response.data;
     } catch (error) {
         console.error(`Error deleting event ${clubId}: `, error);
+        return null;
+    }
+}
+
+export const fetchEventById = async (id: string) => {
+    try {
+        const response = await axios.get(`http://127.0.0.1:3500/events/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching event ${id} info: `, error);
+        return null;
+    }
+}
+
+export const getAllEvents = async () => {
+    try {
+        const response = await axios.get(`http://127.0.0.1:3500/events`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching all events: `, error);
         return null;
     }
 }
@@ -588,6 +614,10 @@ interface SearchParams {
     radius?: number;
     page?: number;
     limit?: number;
+    features?: string[];
+    minAge?: string;
+    filter?: string;
+    sort?: string;
 }
 
 interface SearchResponse {
@@ -672,34 +702,62 @@ export const searchBars = async ({
     searchQuery = "",
     location = "",
     date = "",
+    filter = "all",
     genre = "",
     minPrice,
     maxPrice,
     rating,
-    radius = 5000, // Search radius in meters, default 5km
+    radius = 20000,
     page = 1,
-    limit = 10
-}: SearchParams) => {
-    console.log("searching bars");
+    limit = 10,
+    features = [],
+    minAge = "",
+    sort = "rating"
+  }: SearchParams) => {
     try {
-        const searchResults = await searchClubs({
-            searchQuery,
-            location,
-            date,
-            genre,
-            minPrice,
-            maxPrice,
-            rating,
-            radius,
-            page,
-            limit
-        });
-
-        console.log(searchResults);
-
-        return searchResults;
+      // Create query parameters object
+      const queryParams = {
+        searchQuery,
+        location,
+        date,
+        filter,
+        genre,
+        minPrice,
+        maxPrice,
+        rating,
+        radius,
+        page,
+        limit,
+        features: Array.isArray(features) ? features : [],
+        minAge,
+        sort
+      };
+  
+      // Filter out undefined values
+      const filteredParams = Object.fromEntries(
+        Object.entries(queryParams).filter(([_, value]) => 
+          value !== undefined && value !== '' && 
+          !(Array.isArray(value) && value.length === 0)
+        )
+      );
+  
+      const searchResults = await searchClubs(filteredParams);
+      return searchResults;
     } catch (error) {
-        console.error('Error searching bars:', error);
+      console.error('Error searching bars:', error);
+      return null;
+    }
+  };
+
+//AVAILABILITY
+export const getRangeAvailability = async (clubId: string, startDate: string, endDate: string) => {
+    try {
+        const response = await axios.get(`http://127.0.0.1:3500/club/${clubId}/availability`, {
+            params: { startDate, endDate }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error getting availability:', error);
         return null;
     }
-};
+}

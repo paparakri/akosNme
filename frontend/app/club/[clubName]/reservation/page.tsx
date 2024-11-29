@@ -7,9 +7,11 @@ import { jwtDecode } from 'jwt-decode';
 import { Calendar, Star, Clock, Users, Wine, Music, MapPin, PartyPopper, 
          DollarSign, X, AlertCircle, Info, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { fetchClubByName, postReservation, switchUsername2Id } from '@/app/lib/backendAPI';
+import { fetchClubByName, fetchEventById, postReservation, switchUsername2Id } from '@/app/lib/backendAPI';
 import ChakraDatePicker from '@/app/ui/datepicker';
 import CompactEventCarousel from '@/app/ui/compactEventCarousel';
+import { useReservation } from '@/app/ui/reservationContext';
+import { getDefaultClubImage } from '@/app/lib/imageSelector';
 
 interface ReservationData {
   user: string;
@@ -96,6 +98,8 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const ReservationPage: React.FC = () => {
+  const { selectedDate, setSelectedDate } = useReservation();
+
   const [reservation, setReservation] = useState<ReservationData>({
     user: '',
     club: '',
@@ -120,12 +124,48 @@ const ReservationPage: React.FC = () => {
     endTime: '',
     numOfGuests: ''
   });
+  const [matchingEvents, setMatchingEvents] = useState<any[]>([]);
 
   const router = useRouter();
   const pathname = usePathname();
   const clubName = pathname?.split('/')[2] || '';
   const [clubDisplayName, setClubDisplayName] = useState(clubName);
   const [clubDetails, setClubDetails] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchMatchingEvents = async () => {
+      if (reservation.date && clubDetails?.events) {
+        try {
+          const eventPromises = clubDetails.events.map(async (eventId: string) => {
+            const eventObj = await fetchEventById(eventId);
+            const eventDate = new Date(eventObj.date).toISOString().split('T')[0];
+            return eventDate === reservation.date ? eventObj : null;
+          });
+
+          const resolvedEvents = await Promise.all(eventPromises);
+          const validEvents = resolvedEvents.filter(event => event !== null);
+          
+          setMatchingEvents(validEvents);
+        } catch (error) {
+          console.error('Error fetching matching events:', error);
+        }
+      }
+    };
+
+    fetchMatchingEvents();
+  }, [reservation.date, clubDetails]);
+
+  useEffect(() => {
+    console.log(`SelectedDate context hook: ${selectedDate}`)
+    if (selectedDate) {
+      setReservation(prev => ({
+        ...prev,
+        date: selectedDate
+      }));
+      // Clear the date from context after using it
+      setSelectedDate(null);
+    }
+  }, [selectedDate, setSelectedDate]);
 
   useEffect(() => {
     const initializeReservation = async () => {
@@ -221,6 +261,7 @@ const ReservationPage: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    console.log(`Input name: ${name} && Input value: ${value}`);
     setReservation(prev => ({ ...prev, [name]: value }));
     if (errors[name as keyof ValidationErrors]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -234,12 +275,12 @@ const ReservationPage: React.FC = () => {
     }
   };
 
-  const autofillEvent = (date: Date, startTime: string, endTime: string) => {
+  const autofillEvent = (date: Date, startTime: Date) => {
+    console.log(`Date: ${date} && Start Time: ${new Date(startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`)
     setReservation(prev => ({
       ...prev,
       date: date.toISOString().split('T')[0],
-      startTime,
-      endTime
+      startTime: new Date(startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) ,
     }));
   };
 
@@ -248,395 +289,339 @@ const ReservationPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 pt-10">
-      <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-        <AnimatePresence mode="wait">
-          {isReservationComplete ? (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white pb-16">
+      {/* Club Header */}
+      <div className="relative mb-12">
+        <div className="relative h-[50vh] overflow-hidden">
+          <img 
+            src={`/default-images/${getDefaultClubImage(clubDetails)}.jpg`}
+            alt={clubDisplayName}
+            className="w-full h-full object-cover transform scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/80 to-black" />
+          
+          <div className="absolute bottom-0 left-0 right-0 p-8 max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-2xl mx-auto text-center space-y-8"
+              className="space-y-4"
             >
-              <div className="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/20 rounded-full 
-                          flex items-center justify-center">
-                <PartyPopper className="w-10 h-10 text-green-500" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Reservation Confirmed!
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Get ready for an amazing night at {clubDisplayName}. We've sent the confirmation 
-                details to your email.
+              <h1 className="text-5xl font-bold text-white">
+                {clubDisplayName}
+              </h1>
+              <p className="text-xl text-gray-300 max-w-2xl">
+                {clubDetails?.description}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => router.push('/my-profile/bookings')}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white 
-                           rounded-xl font-medium shadow-sm hover:shadow-lg transition-all duration-200"
-                >
-                  View My Reservations
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsReservationComplete(false)}
-                  className="px-6 py-3 border-2 border-blue-500 text-blue-500 rounded-xl 
-                           font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 
-                           transition-all duration-200"
-                >
-                  Make Another Reservation
-                </motion.button>
-              </div>
-            </motion.div>
-          ) : (
-            <div className="space-y-12">
-              {/* Hero Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative h-96 rounded-2xl overflow-hidden shadow-2xl"
-              >
-                <img
-                  src="/Designer.jpeg"
-                  alt="Club atmosphere"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40 
-                            flex items-center">
-                  <div className="px-8">
-                    <motion.h1
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="text-4xl md:text-5xl font-bold text-white mb-4"
-                    >
-                      Reserve Your Night at{" "}
-                      <span className="bg-gradient-to-r from-blue-400 to-pink-500 
-                                   bg-clip-text text-transparent">
-                        {clubDisplayName}
-                      </span>
-                    </motion.h1>
-                    <motion.p
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="text-gray-200 text-lg max-w-2xl"
-                    >
-                      Experience an unforgettable night at one of the city's most exclusive venues. 
-                      Secure your spot and enjoy premium service.
-                    </motion.p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Main Content Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {/* Reservation Form Section */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="space-y-8"
-                >
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border 
-                              border-gray-200 dark:border-gray-700">
-                    <h2 className="text-2xl font-semibold mb-6 bg-gradient-to-r from-blue-400 
-                               to-pink-500 bg-clip-text text-transparent">
-                      Make Your Reservation
-                    </h2>
-
-                    {/* Reservation Form Fields */}
-                    <div className="space-y-6">
-                      {/* Date Field */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Select Date
-                        </label>
-                        <ChakraDatePicker
-                          value={reservation.date}
-                          onChange={handleInputChange}
-                          isRequired={true}
-                          isInvalid={!!errors.date}
-                          errorMsg={errors.date}
-                          label="Date"
-                        />
-                      </div>
-
-                      {/* Time Field */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Select Time
-                        </label>
-                        <input
-                          type="time"
-                          name="startTime"
-                          value={reservation.startTime}
-                          onChange={handleInputChange}
-                          className={`w-full px-4 py-2 rounded-lg border ${
-                            errors.startTime 
-                              ? 'border-red-500 dark:border-red-400' 
-                              : 'border-gray-300 dark:border-gray-600'
-                          } bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                          focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                          transition-all duration-200`}
-                        />
-                        {errors.startTime && (
-                          <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                            {errors.startTime}
-                          </p>
-                        )}
-                      </div>
-                      {/* Number of Guests Field */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Number of Guests
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            name="numOfGuests"
-                            value={reservation.numOfGuests}
-                            onChange={(e) => handleNumberInputChange(parseInt(e.target.value))}
-                            min="1"
-                            max="20"
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                              errors.numOfGuests 
-                                ? 'border-red-500 dark:border-red-400' 
-                                : 'border-gray-300 dark:border-gray-600'
-                            } bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                            transition-all duration-200`}
-                          />
-                          <Users className="absolute right-3 top-2.5 text-gray-400" />
-                        </div>
-                        {errors.numOfGuests && (
-                          <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                            {errors.numOfGuests}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Table Number Field */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Preferred Table (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          name="tableNumber"
-                          value={reservation.tableNumber}
-                          onChange={handleInputChange}
-                          placeholder="Enter table number if you have a preference"
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                                   focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                   transition-all duration-200"
-                        />
-                      </div>
-
-                      {/* Special Requests Field */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Special Requests
-                        </label>
-                        <textarea
-                          name="specialRequests"
-                          value={reservation.specialRequests}
-                          onChange={handleInputChange}
-                          placeholder="Any special requirements or requests?"
-                          rows={4}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                                   focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                   transition-all duration-200 resize-none"
-                        />
-                      </div>
-
-                      {/* Submit Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleSubmit}
-                        className="w-full py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white 
-                                 rounded-xl font-medium shadow-sm hover:shadow-lg transition-all duration-200"
-                      >
-                        Reserve Now
-                      </motion.button>
-                    </div>
-                  </div>
-
-                  {/* Club Policies */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border 
-                              border-gray-200 dark:border-gray-700">
-                    <h3 className="text-2xl font-semibold mb-6 bg-gradient-to-r from-blue-400 
-                               to-pink-500 bg-clip-text text-transparent">
-                      Venue Policies
-                    </h3>
-                    <div className="space-y-4">
-                      <PolicyItem
-                        icon={Info}
-                        title="Age Requirement"
-                        description="All guests must be 21 or older with valid ID"
-                      />
-                      <PolicyItem
-                        icon={Star}
-                        title="Dress Code"
-                        description="Smart casual attire required. No sportswear"
-                      />
-                      <PolicyItem
-                        icon={Clock}
-                        title="Arrival Time"
-                        description="Please arrive within 30 minutes of your reservation time"
-                      />
-                    </div>
-                  </div>
-
-                </motion.div>
-
-                {/* Sidebar Content */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="space-y-8"
-                >
-                  {/* Club Features */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border 
-                              border-gray-200 dark:border-gray-700">
-                    <h3 className="text-2xl font-semibold mb-6 bg-gradient-to-r from-blue-400 
-                               to-pink-500 bg-clip-text text-transparent">
-                      Venue Highlights
-                    </h3>
-                    <div className="grid gap-6">
-                      <FeatureCard
-                        icon={Music}
-                        title="Premium Sound System"
-                        description="State-of-the-art audio equipment and live performances"
-                      />
-                      <FeatureCard
-                        icon={Wine}
-                        title="VIP Service"
-                        description="Exclusive bottle service and signature cocktails"
-                      />
-                      <FeatureCard
-                        icon={Users}
-                        title="Private Areas"
-                        description="Reserved sections for you and your guests"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Events Section */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border 
-                              border-gray-200 dark:border-gray-700">
-                    <h3 className="text-2xl font-semibold mb-6 bg-gradient-to-r from-blue-400 
-                               to-pink-500 bg-clip-text text-transparent">
-                      Upcoming Events
-                    </h3>
-                    <CompactEventCarousel clubId={clubId} autofillFunction={(date, startTime, endTime) => autofillEvent(date, startTime.toString(), endTime)} />
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Footer Info */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12"
-              >
-                <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
-                  <Clock className="w-5 h-5" />
+              
+              <div className="flex items-center space-x-6 text-gray-300">
+                <div className="flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
                   <span>Open Thu-Sat, 10 PM - 4 AM</span>
                 </div>
-                <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
-                  <MapPin className="w-5 h-5" />
-                  <span>{clubDetails?.address || 'Location information unavailable'}</span>
+                <div className="flex items-center">
+                  <MapPin className="w-5 h-5 mr-2" />
+                  <span>{clubDetails?.address}</span>
                 </div>
-                <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
-                  <DollarSign className="w-5 h-5" />
-                  <span>Minimum spend: €{reservation.minPrice} per person</span>
+                <div className="flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  <span>Min. spend: €{reservation.minPrice}/person</span>
                 </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
 
-        {/* Confirmation Modal */}
-        <AnimatePresence>
-          {isConfirmationVisible && (
+      <div className="max-w-7xl mx-auto px-4">
+        <AnimatePresence mode="wait">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Form Section */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-8"
             >
-              <motion.div
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.95 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-xl"
-              >
-                <h3 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
-                  Confirm Your Reservation
-                </h3>
-                <div className="space-y-4 mb-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{reservation.date}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Time</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{reservation.startTime}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Guests</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{reservation.numOfGuests}</p>
-                    </div>
-                    {reservation.tableNumber && (
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Table</p>
-                        <p className="font-medium text-gray-900 dark:text-white">{reservation.tableNumber}</p>
-                      </div>
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-xl">
+                {/* Date Field */}
+                <div className="space-y-6">
+                  <div>
+                    <ChakraDatePicker
+                      value={reservation.date}
+                      onChange={handleInputChange}
+                      isRequired={true}
+                      isInvalid={!!errors.date}
+                      errorMsg={errors.date}
+                      label="Select Date"
+                    />
+                    
+                    {/* Event Alert */}
+                    {matchingEvents.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 bg-purple-500/10 border border-purple-500/20 rounded-xl p-4"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="p-2 bg-purple-500/20 rounded-lg">
+                            <PartyPopper className="w-5 h-5 text-purple-400" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-purple-400 mb-1">Special Event!</h4>
+                            {matchingEvents.map((event, index) => (
+                              <p key={index} className="text-sm text-gray-300">
+                                {event.name} starting at {new Date(event.startTime).toLocaleTimeString([], { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
                   </div>
-                  {reservation.specialRequests && (
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Special Requests</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{reservation.specialRequests}</p>
+
+                  {/* Time Field */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">
+                      Select Time
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        name="startTime"
+                        value={reservation.startTime}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border ${
+                          errors.startTime 
+                            ? 'border-red-500' 
+                            : 'border-white/10'
+                        } bg-white/5 backdrop-blur-sm focus:border-purple-500 transition-colors`}
+                      />
+                      <Clock className="absolute right-4 top-3.5 text-gray-400" />
                     </div>
-                  )}
-                </div>
-                <div className="flex space-x-4">
+                    {errors.startTime && (
+                      <p className="text-sm text-red-400 mt-1">
+                        {errors.startTime}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Number of Guests */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">
+                      Number of Guests
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="numOfGuests"
+                        value={reservation.numOfGuests}
+                        onChange={(e) => handleNumberInputChange(parseInt(e.target.value))}
+                        min="1"
+                        max="20"
+                        className={`w-full px-4 py-3 rounded-xl border ${
+                          errors.numOfGuests 
+                            ? 'border-red-500' 
+                            : 'border-white/10'
+                        } bg-white/5 backdrop-blur-sm focus:border-purple-500 transition-colors`}
+                      />
+                      <Users className="absolute right-4 top-3.5 text-gray-400" />
+                    </div>
+                    {errors.numOfGuests && (
+                      <p className="text-sm text-red-400 mt-1">
+                        {errors.numOfGuests}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Table Preference */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">
+                      Preferred Table (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="tableNumber"
+                      value={reservation.tableNumber}
+                      onChange={handleInputChange}
+                      placeholder="Enter table number if you have a preference"
+                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm 
+                               focus:border-purple-500 transition-colors"
+                    />
+                  </div>
+
+                  {/* Special Requests */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">
+                      Special Requests
+                    </label>
+                    <textarea
+                      name="specialRequests"
+                      value={reservation.specialRequests}
+                      onChange={handleInputChange}
+                      placeholder="Any special requirements or requests?"
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm 
+                               focus:border-purple-500 transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={confirmReservation}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white 
-                             rounded-xl font-medium shadow-sm hover:shadow-lg transition-all duration-200"
+                    onClick={handleSubmit}
+                    className="w-full py-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl font-medium 
+                             text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
                   >
-                    Confirm Reservation
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setIsConfirmationVisible(false)}
-                    className="flex-1 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 
-                             dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 
-                             dark:hover:bg-gray-700 transition-all duration-200"
-                  >
-                    Modify
+                    Reserve Now
                   </motion.button>
                 </div>
-              </motion.div>
+              </div>
+
+              {/* Venue Policies */}
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-xl">
+                <h3 className="text-xl font-semibold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Venue Policies
+                </h3>
+                <div className="space-y-4">
+                  <PolicyItem
+                    icon={Info}
+                    title="Age Requirement"
+                    description="All guests must be 21 or older with valid ID"
+                  />
+                  <PolicyItem
+                    icon={Star}
+                    title="Dress Code"
+                    description="Smart casual attire required. No sportswear"
+                  />
+                  <PolicyItem
+                    icon={Clock}
+                    title="Arrival Time"
+                    description="Please arrive within 30 minutes of your reservation time"
+                  />
+                </div>
+              </div>
             </motion.div>
-          )}
+
+            {/* Event & Club Info */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-8"
+            >
+              {/* Upcoming Events */}
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-xl">
+                <h3 className="text-xl font-semibold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Upcoming Events
+                </h3>
+                <CompactEventCarousel
+                  matchingEvents={matchingEvents} 
+                  clubId={clubId}
+                  autofillFunction={autofillEvent}
+                />
+              </div>
+
+              {/* Venue Features */}
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-xl">
+                <h3 className="text-xl font-semibold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Venue Highlights
+                </h3>
+                <div className="grid gap-6">
+                  <FeatureCard
+                    icon={Music}
+                    title="Premium Sound System"
+                    description="State-of-the-art audio equipment and live performances"
+                    gradient="from-purple-500 to-blue-500"
+                  />
+                  <FeatureCard
+                    icon={Wine}
+                    title="VIP Service"
+                    description="Exclusive bottle service and signature cocktails"
+                    gradient="from-pink-500 to-purple-500"
+                  />
+                  <FeatureCard
+                    icon={Users}
+                    title="Private Areas"
+                    description="Reserved sections for you and your guests"
+                    gradient="from-blue-500 to-purple-500"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </AnimatePresence>
       </div>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {isConfirmationVisible && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-gray-900 rounded-2xl p-8 max-w-lg w-full border border-white/10 shadow-2xl"
+            >
+              <h3 className="text-2xl font-semibold mb-6">
+                Confirm Your Reservation
+              </h3>
+              
+              <div className="space-y-6 mb-8">
+                {/* Reservation Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Date', value: reservation.date },
+                    { label: 'Time', value: reservation.startTime },
+                    { label: 'Guests', value: reservation.numOfGuests },
+                    { label: 'Table', value: reservation.tableNumber || 'Not specified' }
+                  ].map((detail) => (
+                    <div key={detail.label}>
+                      <p className="text-sm text-gray-400">{detail.label}</p>
+                      <p className="font-medium">{detail.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Special Requests */}
+                {reservation.specialRequests && (
+                  <div>
+                    <p className="text-sm text-gray-400">Special Requests</p>
+                    <p className="font-medium">{reservation.specialRequests}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={confirmReservation}
+                  className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl font-medium
+                           shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
+                >
+                  Confirm Reservation
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsConfirmationVisible(false)}
+                  className="flex-1 py-3 bg-white/5 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                >
+                  Modify
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

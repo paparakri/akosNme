@@ -7,6 +7,7 @@ const { addReservation, removeReservation, updateReservation } = require('../con
 const { getUserList } = require('../controllers/recs');
 const { geocode, reverseGeocode } = require('../controllers/geocode.js');
 const { getImage, uploadImage } = require('../controllers/images.js');
+const {getAllEvents, getEventById} = require('../controllers/events');
 const multer = require('multer');
 
 router.get('^/$|/index(.html)?', (req, res) => {
@@ -87,5 +88,11 @@ router.route('/geocode/:address')
 
 router.route('/reverse-geocode/:lat/:lng')
     .get(reverseGeocode)
+
+router.route('/events')
+    .get(getAllEvents);
+
+router.route('/events/:id')
+    .get(getEventById);
 
 module.exports = router;

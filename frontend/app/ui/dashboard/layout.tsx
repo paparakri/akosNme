@@ -8,7 +8,7 @@ import Dashboard from './dashboard';
 import Profile from './profile';
 import Events from './events';
 import Settings from './settings';
-import { DragDropSeatingCanvas } from '../dragDropSeating';
+import LayoutManager from '../seatingLayout/layoutManager';
 
 // Icons
 import { 
@@ -125,7 +125,7 @@ const Layout: React.FC = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'tables':
-        return <DragDropSeatingCanvas id={clubData._id} />;
+        return <LayoutManager id={clubData._id} date={new Date()} onSave={() => console.log("Saving Not Yet Implemented")} />;
       case 'events':
         return <Events />;
       case 'settings':
@@ -140,7 +140,7 @@ const Layout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black pt-10">
       {/* Mobile Menu Button */}
       <div className="fixed right-4 top-4 z-50 lg:hidden">
         <button
@@ -163,7 +163,7 @@ const Layout: React.FC = () => {
           {/* Logo */}
           <div className="p-6">
             <h1 className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-2xl font-bold text-transparent">
-              Pulse
+              To Kone
             </h1>
             <p className="mt-1 text-sm text-gray-400">Club Dashboard</p>
           </div>

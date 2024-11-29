@@ -31,3 +31,16 @@ body {
     text-wrap: balance;
   }
 }
+
+.custom-marker-cluster {
+  background: transparent;
+  border: none;
+}
+
+.custom-marker-cluster div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}

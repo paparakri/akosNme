@@ -47,7 +47,7 @@ def calculate_distance(lat1, lng1, lat2, lng2):
     
     return distance
 
-def calculate_hottest(df_clubs, df_reviews, user_location, limit=10, max_distance=10):
+def calculate_hottest(df_clubs, df_reviews, user_location, limit=100, max_distance=10):
     try:
         if df_clubs.empty:
             print("No clubs found in the database!")

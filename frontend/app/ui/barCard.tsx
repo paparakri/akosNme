@@ -1,10 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { getDefaultClubImage } from "../lib/imageSelector";
-import { features } from "process";
+import AvailabilityDisplay from "./availabilityDisplay";
+import { getRangeAvailability } from "../lib/backendAPI";
+import { useRouter } from "next/navigation";
+import { useReservation } from "./reservationContext";
+
+interface AvailabilityDay {
+  date: string;
+  totalTables: number;
+  reservedTables: number;
+  availableTables: number;
+  hasAvailability: boolean;
+}
+
+interface OpeningHours {
+  [key: string]: {
+    isOpen: boolean;
+    open: string;
+    close: string;
+  };
+}
 
 interface BarCardProps {
+  _id: string; //Added for availability fetch
   imageUrl: string;
   imageAlt: string;
   title: string;
@@ -18,9 +38,13 @@ interface BarCardProps {
   features: string[];
   capacity: number;
   dressCode: string;
+  selectedDate?: string;
+  onDateSelect?: (date: Date) => void;
+  openingHours: OpeningHours;
 }
 
 const BarCard: React.FC<BarCardProps> = ({
+  _id,
   imageUrl,
   imageAlt,
   title,
@@ -33,28 +57,83 @@ const BarCard: React.FC<BarCardProps> = ({
   username,
   features,
   capacity,
-  dressCode
+  dressCode,
+  selectedDate,
+  openingHours
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const { setSelectedDate } = useReservation();
+  const router = useRouter();
+
+  const onDateSelect = (date: Date) => {
+    const formattedDate = date.toISOString().split('T')[0];
+    setSelectedDate(formattedDate);
+    router.push(`/club/${username}/reservation`);
+  }
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!_id) return;
+      setIsLoadingAvailability(true);
+      try {
+        const start = selectedDate 
+          ? new Date(new Date(selectedDate).setDate(new Date(selectedDate).getDate() - 2))
+          : new Date();
+        const end = new Date(start);
+        end.setDate(end.getDate() + 30);
+        
+        console.log("Printing start and end dates: ", start, end);
+
+        const availabilityData = await getRangeAvailability(
+          _id,
+          start.toISOString().split('T')[0],
+          end.toISOString().split('T')[0]
+        );
+
+        console.log("Printing availability fetched: ", availabilityData.availability);
+
+        setAvailability(availabilityData.availability);
+      } catch (err) {
+        console.error('Error fetching availability:', err);
+      } finally {
+        setIsLoadingAvailability(false);
+      }
+    };
+
+    fetchAvailability();
+  }, [_id, selectedDate, capacity]);
+
+  const handleDateSelect = (date: Date) => {
+    onDateSelect?.(date);
+  };
 
   return (
+    <div 
+      className="relative block group bg-white/5 rounded-3xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
     <Link
       href={`/club/${username}`}
-      className="relative block group bg-white/5 rounded-3xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300"
+      className="block"
     >
       {/* Background Image */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-        style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : `url('/default-images/${
-          getDefaultClubImage({
-            genres: genres,
-            features: features,
-            formattedPrice: formattedPrice,
-            capacity: capacity,
-            dressCode: dressCode,
-            description: description
-          })
-        }.jpg')` }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-300 group-hover:scale-110" 
+        style={{ 
+          backgroundImage: imageUrl ? `url(${imageUrl})` : `url('/default-images/${
+            getDefaultClubImage({
+              genres,
+              features,
+              formattedPrice,
+              capacity,
+              dressCode,
+              description
+            })
+          }.jpg')`
+        }}
       />
       
       {/* Gradient Overlay */}
@@ -68,9 +147,9 @@ const BarCard: React.FC<BarCardProps> = ({
       </div>
       
       {/* Content Container */}
-      <div className="relative h-80">
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <div className="space-y-2">
+      <div className="relative h-[28rem]">
+        <div className="absolute inset-x-0 bottom-0 p-6">
+          <div className="space-y-4">
             {/* Tags */}
             <div className="flex items-center space-x-2">
               {genres?.[0] && (
@@ -88,7 +167,7 @@ const BarCard: React.FC<BarCardProps> = ({
             <p className="text-gray-300 text-sm line-clamp-2">{description}</p>
             
             {/* Rating and Location */}
-            <div className="flex items-center justify-between pt-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-1">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -113,16 +192,30 @@ const BarCard: React.FC<BarCardProps> = ({
           </div>
         </div>
       </div>
+    </Link>
+      {/* Hover Overlay with Availability */}
+      <div 
+      className={`absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/60 transition-opacity duration-300 
+        ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+      >
+        <div className="absolute inset-x-0 bottom-0 p-6">
+          {isLoadingAvailability ? (
+            <div className="animate-pulse bg-gray-700/50 rounded-lg h-24" />
+          ) : (
+            <AvailabilityDisplay
+              availableDays={availability}
+              selectedDate={selectedDate}
+              onDateSelect={onDateSelect}
+              openingHours={openingHours}
+            />
+          )}
 
-      {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <div className="w-full py-3 bg-white text-purple-900 rounded-xl font-semibold hover:bg-gray-100 transition-colors text-center">
+          <button className="mt-4 w-full py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors">
             View Details
-          </div>
+          </button>
         </div>
       </div>
-    </Link>
+    </div>
   );
 };
 

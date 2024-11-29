@@ -11,6 +11,7 @@ import BarCard from "../ui/barCard";
 import SearchBar from "../ui/searchBar";
 import ResponsiveMasonryGrid from "../ui/responsiveMasonryGrid";
 import { fetchLists } from "../lib/backendAPI";
+import PaginatedBarCards from "../ui/paginatedBarCards";
 
 const categories = [
   {
@@ -30,7 +31,7 @@ const categories = [
     pattern: "radial-gradient(circle at 80% -10%, rgba(147, 51, 234, 0.15), transparent 50%)"
   },
   {
-    id: "student_friendly",
+    id: "student",
     name: "Student Friendly",
     icon: FaGraduationCap,
     description: "Budget-friendly spots perfect for students",
@@ -38,7 +39,7 @@ const categories = [
     pattern: "radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.15), transparent 50%)"
   },
   {
-    id: "big_groups",
+    id: "groups",
     name: "Group Friendly",
     icon: FaUsers,
     description: "Ideal venues for large groups and parties",
@@ -46,7 +47,7 @@ const categories = [
     pattern: "radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.15), transparent 50%)"
   },
   {
-    id: "date_night",
+    id: "date",
     name: "Date Night",
     icon: FaHeart,
     description: "Romantic settings for the perfect date",
@@ -54,7 +55,7 @@ const categories = [
     pattern: "radial-gradient(circle at 50% -50%, rgba(244, 63, 94, 0.15), transparent 50%)"
   },
   {
-    id: "live_music",
+    id: "live",
     name: "Live Music",
     icon: FaGuitar,
     description: "Venues featuring live performances",
@@ -116,7 +117,7 @@ export default function ExplorePage() {
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 pt-5">
       {/* Sophisticated progress bar with glow effect */}
       <div className="fixed top-0 left-0 w-full h-1 bg-black/10 dark:bg-white/10 z-50">
         <motion.div 
@@ -141,7 +142,7 @@ export default function ExplorePage() {
           style={{ opacity: headerOpacity, scale: headerScale }}
           className="relative mb-16"
         >
-          <div className="absolute inset-0" style={{ background: selectedCategoryData.pattern }} />
+          <div className="absolute inset-0 rounded-2xl" style={{ background: selectedCategoryData.pattern }} />
           <div className="relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -168,7 +169,7 @@ export default function ExplorePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <SearchBar />
+              <SearchBar currentFilter={selectedCategory} />
             </motion.div>
           </div>
         </motion.div>
@@ -250,35 +251,7 @@ export default function ExplorePage() {
               ))}
             </motion.div>
           ) : clubs.length > 0 ? (
-            <ResponsiveMasonryGrid>
-              {clubs.slice(0, 8 * page).map((club, index) => (
-                <motion.div
-                  key={club._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -10 }}
-                  onHoverStart={() => setHoveredCard(club._id)}
-                  onHoverEnd={() => setHoveredCard(null)}
-                >
-                  <Link href={`/club/${club.username}`}>
-                    <div className="transform transition-all duration-300">
-                      <BarCard
-                        username={club.username}
-                        imageUrl={club.images ? club.images[0].toString() : '/default-club.jpeg'}
-                        imageAlt={club.displayName}
-                        title={club.displayName}
-                        description={club.description}
-                        formattedPrice={club.formattedPrice}
-                        reviewCount={club.reviews.length}
-                        location={club.address}
-                        rating={club.rating}
-                      />
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </ResponsiveMasonryGrid>
+            <PaginatedBarCards results={clubs} />
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -298,28 +271,6 @@ export default function ExplorePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Enhanced Load More Button */}
-        {clubs.length > 8 * page && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mt-16"
-          >
-            <motion.button
-              onClick={() => setPage(p => p + 1)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-8 py-4 bg-gradient-to-r ${selectedCategoryData.gradient} text-white rounded-full
-                       shadow-lg hover:shadow-xl transition-shadow duration-300`}
-            >
-              <span className="flex items-center space-x-2">
-                <span>Discover More Venues</span>
-                <FaCompass className="w-4 h-4 animate-pulse" />
-              </span>
-            </motion.button>
-          </motion.div>
-        )}
       </div>
     </div>
   );

@@ -51,6 +51,10 @@ const NAV_ITEMS_NOT_LOGGED_IN: Array<NavItem> = [
     href: '/',
   },
   {
+    label: 'Search',
+    href: '/search'
+  },
+  {
     label: 'Explore Clubs',
     href: '/explore-clubs',
   },
@@ -70,6 +74,10 @@ const NAV_ITEMS_LOGGED_IN: Array<NavItem> = [
     href: '/',
   },
   {
+    label: 'Search',
+    href: '/search'
+  },
+  {
     label: 'Explore Clubs',
     href: '/explore-clubs',
   },
@@ -81,6 +89,10 @@ const NAV_ITEMS_LOGGED_IN: Array<NavItem> = [
     label: 'Social Feed',
     href: '/social-feed',
   },
+  {
+    label: 'About Us',
+    href: '/about-us',
+  }
 ];
 
 export default function Navbar() {
@@ -409,7 +421,7 @@ export default function Navbar() {
             onClick={() => router.push('/')}
           >
             <Box className="font-bold text-2xl bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Pulse
+              To Kone
             </Box>
           </motion.div>
 

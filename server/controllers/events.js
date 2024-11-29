@@ -46,6 +46,18 @@ const getEvents = async (req, res) => {
     }
 };
 
+const getAllEvents = async (req, res) => {
+    try {
+        console.log(`Getting all events`);
+        const events = await Event.find();
+
+        res.status(200).json(events);
+    } catch (err) {
+        console.log(`Error in getAllEvents:`, err);
+        res.status(400).json({ error: err.message });
+    }
+}
+
 // POST
 const postEvent = async (req, res) => {
     try {
@@ -164,4 +176,18 @@ const deleteEvent = async (req, res) => {
     }
 };
 
-module.exports = { getEvents, postEvent, updateEvent, deleteEvent };
+const getEventById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found." });
+        }
+        res.status(200).json(event);
+    } catch (err) {
+        console.log(`Error in getEventById:`, err);
+        res.status(400).json({ error: err.message });
+    }
+}
+
+module.exports = { getAllEvents, getEvents, postEvent, updateEvent, deleteEvent, getEventById };

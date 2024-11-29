@@ -7,7 +7,16 @@ class ClubScoreManager:
     def __init__(self, db):
         self.db = db
         self.scorer = ClubScorer()
-        self.SCORE_VALIDITY_DAYS = 1  # How long scores are considered valid
+        self.SCORE_VALIDITY_DAYS = 1
+        # Define minimum score thresholds for each category
+        self.score_thresholds = {
+            'trending': 25,        # Only show very trending clubs
+            'luxury': 40,          # High threshold for luxury venues
+            'student_friendly': 40, # Reasonable threshold for student spots
+            'big_groups': 35,      # Places that can actually handle groups
+            'date_night': 30,      # Good ambiance and setting
+            'live_music': 25       # Must have proper music setup
+        }
 
     def update_club_scores(self, club_id: str) -> None:
         """Update scores for a single club"""
@@ -35,12 +44,8 @@ class ClubScoreManager:
         """Bulk update scores for all clubs that need updating"""
         cutoff_date = datetime.now() - timedelta(days=self.SCORE_VALIDITY_DAYS)
         
-        print(f"Updating scores for clubs last updated before {cutoff_date}")
-        
-        # Get all clubs from clubUser collection and their current scores (if any)
         pipeline = [
             {
-                # Start with all clubs in clubUser
                 '$lookup': {
                     'from': 'clubusers',
                     'localField': '_id',
@@ -51,9 +56,7 @@ class ClubScoreManager:
             {
                 '$match': {
                     '$or': [
-                        # Either no scores exist
                         {'score_data': {'$size': 0}},
-                        # Or scores are outdated
                         {'score_data.last_updated': {'$lt': cutoff_date}}
                     ]
                 }
@@ -62,10 +65,6 @@ class ClubScoreManager:
         
         clubs_needing_updates = list(self.db.clubusers.aggregate(pipeline))
         
-        print(f"Found {len(clubs_needing_updates)} clubs needing updates")
-        print(clubs_needing_updates)
-
-        # Prepare bulk updates
         operations = []
         for club in clubs_needing_updates:
             scores = {
@@ -84,15 +83,17 @@ class ClubScoreManager:
                 upsert=True
             ))
         
-        print(f"Updating scores for {len(operations)} clubs")
         if operations:
             self.db.club_scores.bulk_write(operations)
 
     def get_clubs_by_category(self, category: str, page: int = 1, limit: int = 20) -> List[Dict]:
-        """Get clubs sorted by their score in a specific category"""
+        """Get clubs sorted by their score in a specific category and filtered by minimum threshold"""
         skip = (page - 1) * limit
         
-        # Pipeline to join clubusers with their scores and sort by category score
+        # Get the minimum score threshold for this category
+        min_score = self.score_thresholds.get(category, 0)
+        
+        # Enhanced pipeline with score threshold filtering
         pipeline = [
             {
                 '$lookup': {
@@ -105,14 +106,20 @@ class ClubScoreManager:
             {
                 '$unwind': {
                     'path': '$score_data',
-                    'preserveNullAndEmptyArrays': True  # Keep clubs even if they don't have scores yet
+                    'preserveNullAndEmptyArrays': True
                 }
             },
             {
                 '$addFields': {
                     'category_score': {
-                        '$ifNull': ['$score_data.scores.' + category, 0]  # Default to 0 if no score
+                        '$ifNull': ['$score_data.scores.' + category, 0]
                     }
+                }
+            },
+            {
+                # Only include clubs that meet the minimum score threshold
+                '$match': {
+                    'category_score': {'$gte': min_score}
                 }
             },
             {'$sort': {'category_score': -1}},
@@ -124,6 +131,6 @@ class ClubScoreManager:
         
         # Include the score in the returned clubs
         for club in clubs:
-            club['score'] = club.get('category_score', 0)  # Add the score to each club
+            club['score'] = club.get('category_score', 0)
 
         return clubs

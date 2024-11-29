@@ -155,17 +155,22 @@ const getReservations = async (req, res) => {
         );
 
         reservations = await Promise.all(reservations.map(async (reservation) => {
-            const club = await ClubUser.findById(reservation.club);
-            const event = await Event.findById(reservation.event);
-            return {
-                ...reservation._doc,
-                club: club ? club.displayName : null,
-                event: event ? event.name : null
-            };
+            if(reservation){
+                console.log("Checking reservation: ", reservation);
+                const club = await ClubUser.findById(reservation.club);
+                console.log("Got club: ", club);
+                const event = await Event.findById(reservation.event);
+                return {
+                    ...reservation._doc,
+                    club: club ? club.displayName : null,
+                    event: event ? event.name : null
+                };
+            }
         }));
 
         res.status(200).json(reservations);
     } catch (err) {
+        console.log("Yeah im throwing this error!!!");
         res.status(400).json({ error: err.message });
     }
 };

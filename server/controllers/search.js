@@ -1,43 +1,105 @@
 // controllers/search.js
 const ClubUser = require('../models/clubUser');
+const Reservation = require('../models/reservation');
+
+const formatDateForComparison = (date) => {
+    const d = new Date(date);
+    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+};
+
+const getDayOfWeek = (date) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[new Date(date).getDay()];
+};
+
+const SCORE_THRESHOLDS = {
+    trending: 25,
+    luxury: 40,
+    student_friendly: 40,
+    big_groups: 30,
+    date_night: 30,
+    live_music: 25
+};
+
+const FILTER_TO_SCORE_FIELD = {
+    trending: 'trending',
+    student: 'student_friendly',
+    groups: 'big_groups',
+    date: 'date_night',
+    live: 'live_music',
+    luxury: 'luxury'
+};
 
 const searchClubs = async (req, res) => {
     try {
-        console.log('Received search query:', req.query);
-        
         const {
             searchQuery = "",
             location = "",
-            date = "",
+            date,
             genre = "",
             minPrice,
-            maxPrice,
-            rating,
-            radius = 5000, // Default 5km
+            radius = 1000,
             page = 1,
-            limit = 10
+            limit = 10,
+            features = [],
+            minAge = "",
+            filter = "all",
+            sort = "rating"
         } = req.query;
 
+        const debugClub = await ClubUser.findOne({ 
+            displayName: "Elite Social Club" 
+          });
+          console.log("Elite Social Club details:", {
+            openingHours: debugClub?.openingHours,
+            capacity: debugClub?.capacity,
+            _id: debugClub?._id
+          });
+          
+          // Then check for any reservations
+          if (debugClub) {
+            const reservations = await Reservation.find({
+              club: debugClub._id,
+              date: "23-11-2024"
+            });
+            console.log("Elite Social Club reservations:", reservations);
+          }
+
+        console.log('Search parameters:', {
+            searchQuery, location, date, filter, page, limit, sort,
+            additionalFilters: { minPrice, features, minAge }
+        });
+
         let pipeline = [];
+
+        // Text search
+        if (searchQuery) {
+            pipeline.push({
+                $search: {
+                    index: "club_users",
+                    text: {
+                        query: searchQuery,
+                        path: ["displayName", "description"],
+                        fuzzy: { maxEdits: 1 }
+                    }
+                }
+            });
+        }
 
         // Handle location search
         if (location) {
             try {
                 let coordinates;
                 
-                // Check if location is already in lat,lng format
                 if (location.includes(',')) {
                     const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
                     if (!isNaN(lat) && !isNaN(lng)) {
-                        coordinates = [lng, lat]; // MongoDB expects [longitude, latitude]
+                        coordinates = [lng, lat];
                     }
                 } else {
-                    // Geocode the location string
                     const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`;
                     const geocodeResponse = await fetch(geocodeUrl, {
-                        headers: {
-                            'User-Agent': 'YourApp/1.0'
-                        }
+                        headers: { 'User-Agent': 'YourApp/1.0' }
                     });
                     const geocodeData = await geocodeResponse.json();
 
@@ -52,15 +114,11 @@ const searchClubs = async (req, res) => {
                 if (coordinates) {
                     pipeline.push({
                         $geoNear: {
-                            near: {
-                                type: "Point",
-                                coordinates: coordinates
-                            },
+                            near: { type: "Point", coordinates },
                             distanceField: "distance",
                             maxDistance: parseInt(radius),
                             spherical: true,
-                            distanceMultiplier: 0.001, // Convert to kilometers
-                            key: "location" // Specify the field name that has the 2dsphere index
+                            distanceMultiplier: 0.001
                         }
                     });
                 }
@@ -69,28 +127,196 @@ const searchClubs = async (req, res) => {
             }
         }
 
-        // Add text search if query exists
-        if (searchQuery) {
+        //Handle availability check if date is provided
+        if (date) {
+            const searchDate = new Date(date);
+            const dateString = formatDateForComparison(searchDate);
+            const dayOfWeek = getDayOfWeek(searchDate);
+          
             pipeline.push({
-                $search: {
-                    index: "club_users",
-                    text: {
-                        query: searchQuery,
-                        path: ["displayName", "description"],
-                        fuzzy: {
-                            maxEdits: 1
-                        }
+              $match: {
+                $and: [
+                  { openingHours: { $exists: true } },
+                  { [`openingHours.${dayOfWeek}.isOpen`]: true }
+                ]
+              }
+            });
+          
+            pipeline.push({
+              $lookup: {
+                from: 'reservations',
+                let: { clubId: '$_id' },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$club', '$$clubId'] },
+                          { $eq: ['$date', dateString] },
+                          { $eq: ['$status', 'approved'] }
+                        ]
+                      }
                     }
+                  },
+                  {
+                    $group: {
+                      _id: null,
+                      totalGuests: { $sum: '$numOfGuests' }
+                    }
+                  }
+                ],
+                as: 'dateReservations'
+              }
+            });
+          
+            pipeline.push({
+              $addFields: {
+                reservationInfo: { $arrayElemAt: ['$dateReservations', 0] },
+                totalReserved: { 
+                  $ifNull: [
+                    { $arrayElemAt: ['$dateReservations.totalGuests', 0] },
+                    0
+                  ]
+                }
+              }
+            });
+          
+            // Remove clubs that exceed capacity
+            pipeline.push({
+              $match: {
+                $expr: {
+                  $lte: ['$totalReserved', '$capacity']
+                }
+              }
+            });
+          }
+
+        // Category filter using stored scores
+        if (filter !== "all" && FILTER_TO_SCORE_FIELD[filter]) {
+            console.log('Applying category filter:', {
+                filter,
+                scoreField: FILTER_TO_SCORE_FIELD[filter],
+                threshold: SCORE_THRESHOLDS[FILTER_TO_SCORE_FIELD[filter]]
+            });
+
+            // First get count before score filtering
+            const initialCount = await ClubUser.countDocuments();
+            console.log('Initial clubs count:', initialCount);
+
+            pipeline.push({
+                $lookup: {
+                    from: 'club_scores',
+                    localField: '_id',
+                    foreignField: 'club_id',
+                    as: 'score_data'
+                }
+            });
+
+            // Check results after lookup
+            const afterLookup = await ClubUser.aggregate([...pipeline]);
+            console.log('After score lookup - count:', afterLookup.length);
+            if (afterLookup.length > 0) {
+                console.log('Sample score_data:', afterLookup[0]?.score_data);
+            }
+
+            pipeline.push({
+                $unwind: {
+                    path: '$score_data',
+                    preserveNullAndEmptyArrays: false // Change to true if you want to keep clubs without scores
+                }
+            });
+
+            const scoreField = FILTER_TO_SCORE_FIELD[filter];
+            pipeline.push({
+                $addFields: {
+                    categoryScore: {
+                        $ifNull: [`$score_data.scores.${scoreField}`, 0]
+                    }
+                }
+            });
+
+            const minScore = SCORE_THRESHOLDS[scoreField] || 0;
+            pipeline.push({
+                $match: {
+                    categoryScore: { $gte: minScore }
+                }
+            });
+
+            // Log intermediate results
+            const afterScoring = await ClubUser.aggregate([...pipeline]);
+            console.log('After score filtering:', {
+                count: afterScoring.length,
+                sampleScores: afterScoring.slice(0, 3).map(club => ({
+                    name: club.displayName,
+                    score: club.categoryScore
+                }))
+            });
+
+            // Sort by category score
+            pipeline.push({
+                $sort: {
+                    categoryScore: -1,
+                    rating: -1
                 }
             });
         }
 
-        // If no location or search query, start with a simple match all
-        if (pipeline.length === 0) {
-            pipeline.push({ $match: {} });
+        // Additional filters
+        const matchStage = {};
+
+        if (genre) matchStage.genres = genre;
+        if (minPrice) matchStage.formattedPrice = { $lte: parseInt(minPrice) };
+        if (minAge) {
+            const userAge = parseInt(minAge);
+            if (!isNaN(userAge) && userAge > 0) {
+                matchStage.minAge = { $lte: userAge };
+            }
         }
 
-        // Add the projection stage
+        // Handle features array
+        if (features) {
+            const featureArray = Array.isArray(features) 
+                ? features 
+                : typeof features === 'string'
+                    ? features.split(',')
+                    : [];
+
+            if (featureArray.length > 0) {
+                matchStage.features = { $all: featureArray };
+            }
+        }
+
+        if (Object.keys(matchStage).length > 0) {
+            pipeline.push({ $match: matchStage });
+            console.log('Additional filters:', matchStage);
+        }
+
+        // Default sorting if no category filter
+        if (filter === "all") {
+            const sortStage = {};
+            switch (sort) {
+                case "rating": sortStage.rating = -1; break;
+                case "price_low": sortStage.formattedPrice = 1; break;
+                case "price_high": sortStage.formattedPrice = -1; break;
+                case "popularity": sortStage.followers = -1; break;
+            }
+            if (Object.keys(sortStage).length > 0) {
+                pipeline.push({ $sort: sortStage });
+            }
+        }
+
+        // Get total count for pagination
+        const countPipeline = [...pipeline];
+        const totalResults = await ClubUser.aggregate([...countPipeline, { $count: 'total' }]);
+        const total = totalResults.length > 0 ? totalResults[0].total : 0;
+
+        // Add pagination
+        pipeline.push(
+            { $skip: (parseInt(page) - 1) * parseInt(limit) },
+            { $limit: parseInt(limit) }
+        );
+
+        // Add final projection
         pipeline.push({
             $project: {
                 _id: 1,
@@ -106,54 +332,22 @@ const searchClubs = async (req, res) => {
                 images: 1,
                 distance: 1,
                 address: 1,
+                openingHours: 1,
+                minAge: 1,
+                categoryScore: 1,
                 score: searchQuery ? { $meta: "searchScore" } : null
             }
         });
 
-        // Add filters if provided
-        const matchStage = {};
-
-        if (genre) {
-            matchStage.genres = genre;
-        }
-
-        if (minPrice || maxPrice) {
-            matchStage.formattedPrice = {};
-            if (minPrice) matchStage.formattedPrice.$gte = parseInt(minPrice);
-            if (maxPrice) matchStage.formattedPrice.$lte = parseInt(maxPrice);
-        }
-
-        if (rating) {
-            matchStage.rating = { $gte: parseFloat(rating) };
-        }
-
-        // Add match stage if there are any filters
-        if (Object.keys(matchStage).length > 0) {
-            pipeline.push({ $match: matchStage });
-        }
-
-        // Sort by distance if it's a location search, otherwise by score if it's a text search
-        if (location) {
-            pipeline.push({ $sort: { distance: 1 } });
-        } else if (searchQuery) {
-            pipeline.push({ $sort: { score: -1 } });
-        }
-
-        // Add pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        pipeline.push({ $skip: skip });
-        pipeline.push({ $limit: parseInt(limit) });
-
-        console.log('Search pipeline:', JSON.stringify(pipeline, null, 2));
-
-        // Execute search
+        //console.log('Final pipeline:', JSON.stringify(pipeline, null, 2));
         const results = await ClubUser.aggregate(pipeline);
-
-        // Get total count (without pagination)
-        const countPipeline = pipeline.slice(0, -2);
-        countPipeline.push({ $count: "total" });
-        const totalCount = await ClubUser.aggregate(countPipeline);
-        const total = totalCount.length > 0 ? totalCount[0].total : 0;
+        console.log('Final results:', {
+            count: results.length,
+            firstResult: results[0] ? {
+                name: results[0].displayName,
+                score: results[0].categoryScore
+            } : null
+        });
 
         res.status(200).json({
             results,
@@ -172,7 +366,6 @@ const searchClubs = async (req, res) => {
 
 const getSearchSuggestions = async (req, res) => {
     try {
-        console.log('Received suggestion query:', req.query);
         const { query = "" } = req.query;
 
         if (!query || query.length < 2) {
@@ -197,16 +390,10 @@ const getSearchSuggestions = async (req, res) => {
                     score: { $meta: "searchScore" }
                 }
             },
-            {
-                $limit: 5
-            }
+            { $limit: 5 }
         ];
-
-        console.log('Suggestion pipeline:', JSON.stringify(pipeline, null, 2));
         
         const suggestions = await ClubUser.aggregate(pipeline);
-        console.log('Suggestions results:', JSON.stringify(suggestions, null, 2));
-
         res.status(200).json(suggestions);
 
     } catch (error) {
@@ -219,11 +406,7 @@ const getSearchSuggestions = async (req, res) => {
 const verifyData = async () => {
     try {
         const count = await ClubUser.countDocuments();
-        console.log(`Total documents in ClubUser collection: ${count}`);
-        
         const sampleDoc = await ClubUser.findOne();
-        //console.log('Sample document:', JSON.stringify(sampleDoc, null, 2));
-        
         return count;
     } catch (error) {
         console.error('Data verification error:', error);

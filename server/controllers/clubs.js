@@ -21,6 +21,7 @@ const getClubUserByName = async (req, res) => {
 const getClubUser = async (req, res) => {
     try{
         const user = req.params.user;
+        console.log("user: ", user);
         const clubUser = await ClubUser.findById(user);
         if(clubUser==null) throw new Error("User not found.");
         res.status(200).json(clubUser);

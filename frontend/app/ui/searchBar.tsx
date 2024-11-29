@@ -5,6 +5,7 @@ import { Calendar, MapPin, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { searchBars, getSearchSuggestions, geocode } from '../lib/backendAPI';
 import debounce from 'lodash/debounce';
+import { formatDateForAPI, parseDate } from '../lib/date-utils';
 
 interface SearchSuggestion {
   _id: string;
@@ -15,7 +16,11 @@ interface SearchSuggestion {
   score: number;
 }
 
-const SearchBar = () => {
+interface SearchBarProps {
+  currentFilter?: string;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ currentFilter }) => {
   const router = useRouter();
   const [locationInput, setLocationInput] = useState('');
   const [locationCoords, setLocationCoords] = useState('');
@@ -59,9 +64,12 @@ const SearchBar = () => {
       } else if (locationInput) {
         searchParams.append('location', locationInput);
       }
-      if (date) searchParams.append('date', date);
-
-      console.log('Search params:', searchParams.toString()); // Debug log
+      if (date) searchParams.append('date', formatDateForAPI(new Date(date)));
+  
+      if (currentFilter && currentFilter !== 'trending') {
+        searchParams.append('filter', currentFilter);
+      }
+  
       router.push(`/search?${searchParams.toString()}`);
     } catch (error) {
       console.error('Search error:', error);

@@ -22,6 +22,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { getCurrentUser } from '@/app/lib/userStatus';
 import { fetchClubReservations, fetchNormalUser, updateReservation } from '@/app/lib/backendAPI';
+import { CustomCalendar } from '../customCalendar';
 
 // Mock data for demonstration
 const mockReservations = [
@@ -234,7 +235,15 @@ const ReservationManagement = () => {
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {reservations
-          .filter(r => r.status === 'pending' && r.date > new Date().toISOString().split('T')[0])
+          .filter(r => {
+            const cutoffDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0].split('-').reverse().join('-');
+            console.log('Comparing dates:', {
+              reservationDate: r.date,
+              cutoffDate: cutoffDate,
+              isAfterCutoff: r.date >= cutoffDate
+            });
+            return r.status === 'pending' && r.date >= cutoffDate;
+          })
           .map(reservation => (
             <ReservationCard
               key={reservation.id}
@@ -245,59 +254,60 @@ const ReservationManagement = () => {
       </div>
     </div>
   );
-
-  const renderCalendarView = () => (
-    <div className="grid gap-8 lg:grid-cols-[350px,1fr]">
-      <div className="rounded-xl bg-gray-900/50 p-6 backdrop-blur-lg">
-        <DayPicker
-          required
-          mode="single"
-          selected={selectedDate}
-          onSelect={setSelectedDate}
-          className="!text-white [&_.rdp-day]:!text-gray-300 [&_.rdp-day_not-selected:hover]:!bg-gray-800 [&_.rdp-day_selected]:!bg-orange-500"
+  const renderCalendarView = () => {
+    const reservationDates = Array.from(new Set(reservations.map(r => r.date)));
+    console.log("All reservations:", reservations);
+    console.log("Unique reservation dates:", reservationDates);
+  
+    return (
+      <div className="grid gap-8 lg:grid-cols-[350px,1fr]">
+        <CustomCalendar
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+          reservationDates={reservationDates}
         />
-      </div>
-      
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-white">
-          Reservations for {selectedDate.toLocaleDateString()}
-        </h3>
-        
-        <div className="divide-y divide-gray-800 rounded-xl bg-gray-900/50 backdrop-blur-lg">
-          {reservations
-            .filter(r => {
-              const reservationDate = new Date(r.date.split('-').reverse().join('-')).toDateString();
-              const selectedDateString = selectedDate.toDateString();
-              console.log("Reservation date:", reservationDate);
-              console.log("Selected date:", selectedDateString);
-              return reservationDate === selectedDateString;
-            })
-            .map(reservation => (
-              <div key={reservation.id} className="flex items-center justify-between p-4">
-                <div className="flex items-center space-x-4">
-                  <div className="text-2xl font-bold text-white">
-                    {new Date(reservation.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">{reservation.customerName}</div>
-                    <div className="text-sm text-gray-400">
-                      {reservation.numOfGuests} guests • Table {reservation.tableNumber || `not specified`}
+       
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-white">
+            Reservations for {selectedDate.toLocaleDateString('en-GB').split('/').join('-')}
+          </h3>
+         
+          <div className="divide-y divide-gray-800 rounded-xl bg-gray-900/50 backdrop-blur-lg">
+            {reservations
+              .filter(r => r.date === selectedDate.toLocaleDateString('en-GB').split('/').join('-'))
+              .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+              .map(reservation => (
+                <div key={reservation.id} className="flex items-center justify-between p-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-2xl font-bold text-white">
+                      {new Date(reservation.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">{reservation.customerName}</div>
+                      <div className="text-sm text-gray-400">
+                        {reservation.numOfGuests} guests • Table {reservation.tableNumber || `not specified`}
+                      </div>
                     </div>
                   </div>
+                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${
+                    reservation.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                    reservation.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                    'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    {reservation.status}
+                  </span>
                 </div>
-                <span className={`rounded-full px-2 py-1 text-xs font-medium ${
-                  reservation.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                  reservation.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                  'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {reservation.status}
-                </span>
-              </div>
-            ))}
+              ))}
+              {!reservations.some(r => r.date === selectedDate.toLocaleDateString('en-GB').split('/').join('-')) && (
+                <div className="p-4 text-center text-gray-400">
+                  No reservations for this date
+                </div>
+              )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderListView = () => {
     const today = new Date().toISOString().split('T')[0];
