@@ -84,7 +84,7 @@ const BarCard: React.FC<BarCardProps> = ({
         const end = new Date(start);
         end.setDate(end.getDate() + 30);
         
-        console.log("Printing start and end dates: ", start, end);
+        //console.log("Printing start and end dates: ", start, end);
 
         const availabilityData = await getRangeAvailability(
           _id,
@@ -92,7 +92,7 @@ const BarCard: React.FC<BarCardProps> = ({
           end.toISOString().split('T')[0]
         );
 
-        console.log("Printing availability fetched: ", availabilityData.availability);
+        //console.log("Printing availability fetched: ", availabilityData.availability);
 
         setAvailability(availabilityData.availability);
       } catch (err) {

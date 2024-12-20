@@ -48,5 +48,24 @@ const ReservationSchema = new mongoose.Schema({
     }
 },{timestamps:true});
 
+ReservationSchema.post('save', async function(doc) {
+  try {
+    // Only create feed post for new reservations
+    if (this.isNew) {
+      await feedService.createReservationPost(
+        doc.user,
+        doc.club,
+        doc._id,
+        doc.date,
+        doc.numOfGuests,
+        doc.tableNumber
+      );
+    }
+  } catch (error) {
+    console.error('Error creating feed post for reservation:', error);
+    // Don't throw error to prevent blocking reservation creation
+  }
+});
+
 const Reservation = mongoose.model('Reservation', ReservationSchema);
 module.exports = Reservation;

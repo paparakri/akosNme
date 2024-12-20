@@ -393,11 +393,17 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log("FETCHING CLUB DATA");
+
         const token = localStorage.getItem('userToken');
         if (!token) throw new Error('No auth token found');
 
+        console.log("THIS IS THE TOKEN", token);
+
         const decoded = jwtDecode<{ username: string }>(token);
         if (!decoded.username) throw new Error('Invalid token');
+
+        console.log("THIS IS THE USERNAME", decoded.username);
 
         const clubInfo = await fetchClubByName(decoded.username);
         setClubData(clubInfo);

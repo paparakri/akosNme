@@ -1,6 +1,5 @@
 const NormalUser = require('../models/normalUser');
 const ClubUser = require('../models/clubUser');
-const FeedItem = require('../models/feedItem');
 
 // Follow a club
 const followClub = async (req, res) => {
@@ -27,7 +26,7 @@ const followClub = async (req, res) => {
         club.followers.push(userId);
 
         // Create feed item for the follow action
-        const feedItem = new FeedItem({
+        const FeedPost = new FeedPost({
             actor: {
                 userId: userId,
                 userType: 'normal',
@@ -42,7 +41,7 @@ const followClub = async (req, res) => {
             }
         });
 
-        await Promise.all([user.save(), club.save(), feedItem.save()]);
+        await Promise.all([user.save(), club.save(), FeedPost.save()]);
 
         res.status(200).json({ 
             message: "Successfully followed club",

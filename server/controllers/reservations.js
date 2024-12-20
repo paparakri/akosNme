@@ -3,20 +3,16 @@ const NormalUser = require('../models/normalUser');
 const Reservation = require('../models/reservation');
 const Event = require('../models/event');
 const mongoose = require('mongoose');
-const { createFeedItem } = require('../helpers/feedItemCreator');
 
 // POST
 const addReservation = async (req, res) => {
     try {
-        console.log(`Adding Reservation`);
-        console.log(req.body);
 
         const userId = req.body.user;
         const { club, event, tableNumber, date, startTime, numOfGuests, specialRequests, minPrice } = req.body;
 
         console.log(`Searching for user with ID: ${userId}`);
         const normalUser = await NormalUser.findById(userId);
-        console.log(`Normal User found:`, normalUser);
 
         if (!normalUser) {
             console.log(`User not found in database. Checking if ID is valid...`);
@@ -70,26 +66,6 @@ const addReservation = async (req, res) => {
             status: 'pending',
             specialRequests: specialRequests || undefined,
             minPrice: Number(minPrice)
-        });
-
-        await createFeedItem({
-            actor: {
-                userId: normalUser._id,
-                userType: 'normal',
-                displayName: normalUser.firstName + ' ' + normalUser.lastName,
-                picturePath: normalUser.picturePath
-            },
-            verb: 'made_reservation',
-            object: {
-                targetId: newReservation._id,
-                targetType: 'reservation',
-                content: {
-                    date: newReservation.date,
-                    clubName: clubUser.displayName,
-                    clubUsername: clubUser.username,
-                    specialRequests: newReservation.specialRequests
-                }
-            }
         });
 
         await NormalUser.updateOne(

@@ -15,7 +15,6 @@ const {
     deleteNormalUser
 } = require('../controllers/users');
 const { getReservations }  = require('../controllers/reservations.js');
-const { getFeed } = require('../controllers/feed.js');
 const { 
     getFriends, 
     getFriendRequests, 
@@ -50,8 +49,154 @@ router.route('/:id/following/clubs/:clubId')
     .post(followClub)
     .delete(unfollowClub);
 
-router.route('/:id/feed')
-    .get(getFeed);
+//FEED---------------------------------
+
+router.get('/feed', async (req, res) => {
+    try {
+      const userId = req.user?.id;  // From auth middleware
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      const includeClubs = req.query.includeClubs !== 'false';
+      const includeFriends = req.query.includeFriends !== 'false';
+  
+      const posts = await feedService.getFeedPosts({
+        userId,
+        page,
+        limit,
+        includeClubs,
+        includeFriends
+      });
+  
+      res.json({
+        success: true,
+        data: posts
+      });
+    } catch (error) {
+      console.error('Error in GET /feed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch feed posts'
+      });
+    }
+  });
+  
+  // Create event post (typically called from event creation endpoint)
+  router.post('/feed/event', async (req, res) => {
+    try {
+      const { clubId, eventId, eventName, eventDate, eventDescription } = req.body;
+  
+      // Validate required fields
+      if (!clubId || !eventId || !eventName || !eventDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields'
+        });
+      }
+  
+      const post = await feedService.createEventPost(
+        clubId,
+        eventId,
+        eventName,
+        new Date(eventDate),
+        eventDescription
+      );
+  
+      res.json({
+        success: true,
+        data: post
+      });
+    } catch (error) {
+      console.error('Error in POST /feed/event:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create event post'
+      });
+    }
+  });
+  
+  // Create reservation post (typically called from reservation creation endpoint)
+  router.post('/feed/reservation', async (req, res) => {
+    try {
+      const {
+        userId,
+        clubId,
+        reservationId,
+        reservationDate,
+        guestCount,
+        tableNumber
+      } = req.body;
+  
+      // Validate required fields
+      if (!userId || !clubId || !reservationId || !reservationDate || !guestCount) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields'
+        });
+      }
+  
+      const post = await feedService.createReservationPost(
+        userId,
+        clubId,
+        reservationId,
+        new Date(reservationDate),
+        guestCount,
+        tableNumber
+      );
+  
+      res.json({
+        success: true,
+        data: post
+      });
+    } catch (error) {
+      console.error('Error in POST /feed/reservation:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create reservation post'
+      });
+    }
+  });
+  
+  // Create review post (typically called from review creation endpoint)
+  router.post('/feed/review', async (req, res) => {
+    try {
+      const {
+        userId,
+        clubId,
+        reviewId,
+        rating,
+        reviewText
+      } = req.body;
+  
+      // Validate required fields
+      if (!userId || !clubId || !reviewId || !rating) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields'
+        });
+      }
+  
+      const post = await feedService.createReviewPost(
+        userId,
+        clubId,
+        reviewId,
+        rating,
+        reviewText
+      );
+  
+      res.json({
+        success: true,
+        data: post
+      });
+    } catch (error) {
+      console.error('Error in POST /feed/review:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create review post'
+      });
+    }
+  });
+
+//-------------------------------------
 
 router.route('/:id')
     .get(getNormalUser)

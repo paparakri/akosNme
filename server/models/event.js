@@ -49,5 +49,21 @@ const EventSchema = new mongoose.Schema({
     }
 },{timestamps:true});
 
+EventSchema.post('save', async function(doc) {
+    try {
+      if (this.isNew) {
+        await feedService.createEventPost(
+          doc.club,
+          doc._id,
+          doc.name,
+          doc.date,
+          doc.description
+        );
+      }
+    } catch (error) {
+      console.error('Error creating feed post for event:', error);
+    }
+});
+
 const Event = mongoose.model('Event', EventSchema);
 module.exports = Event;

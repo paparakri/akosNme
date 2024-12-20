@@ -41,8 +41,6 @@ const AvailabilityDisplay: React.FC<AvailabilityDisplayProps> = ({
   openingHours = {}
 }) => {
 
-  console.log("Printing Availability through the availabilty display: ", availableDays)
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const getDayOfWeek = (date: Date): string => {
@@ -58,8 +56,6 @@ const AvailabilityDisplay: React.FC<AvailabilityDisplayProps> = ({
 
   const getDatesToShow = () => {
     const dates = [];
-
-    console.log("Printing availabilty date: ", parseDate(availableDays[0]?.date));
 
     const startDate = parseDate(availableDays[0]?.date);
 
@@ -150,8 +146,6 @@ const AvailabilityDisplay: React.FC<AvailabilityDisplayProps> = ({
             const availability = availableDays?.find(day => day.date === dateString);
             
             const isOpen = isClubOpen(date);
-
-            console.log("availability inside rendering loop: ", availability);
             
             return (
               <button

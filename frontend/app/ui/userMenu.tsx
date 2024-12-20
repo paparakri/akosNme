@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Menu } from 'lucide-react';
+import ViewModeToggle from "./viewModeToggle";
 
 export const UserMenu = ({ handleButtonClick, handleLogout, user }: { 
   handleButtonClick: (path: string) => void, 
@@ -101,7 +102,7 @@ export const UserMenu = ({ handleButtonClick, handleLogout, user }: {
 
         {/* Dashboard */}
         <div className="px-2 py-2">
-          <MenuLink onClick={() => handleButtonClick('/club/dashboard')}>
+          <MenuLink onClick={() => handleButtonClick('/dashboard')}>
             Club Dashboard
           </MenuLink>
         </div>
@@ -119,7 +120,12 @@ export const UserMenu = ({ handleButtonClick, handleLogout, user }: {
     </div>
   );
 
-  return userType === 'normal' ? normalUserMenu : clubUserMenu;
+  return (
+    <>
+      <ViewModeToggle/>
+      {userType === 'normal' ? normalUserMenu : clubUserMenu}
+    </>
+  )
 };
 
 // Helper Components

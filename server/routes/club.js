@@ -6,6 +6,7 @@ const { saveLayout, getClubUser, getClubUserByName, createClubUser, getFollowers
 const { updateAllClubs } = require("../config/updateAllUsers.js");
 const { getClubReservations } = require('../controllers/reservations');
 const { getRangeAvailability } = require('../controllers/availability');
+const { reservationStream } = require('../controllers/sseControl');
 
 router.route('/update-all')
     .post(updateAllClubs);
@@ -44,5 +45,8 @@ router.route('/:user/reservations')
 
 router.route('/:user/availability')
     .get(getRangeAvailability);
+
+router.route('/:user/reservations/stream')
+    .get(reservationStream);
 
 module.exports = router;

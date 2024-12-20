@@ -1,47 +1,57 @@
 "use client"
+
 import { ReactNode } from "react";
 import { redirect } from 'next/navigation';
-
-import { useState, useEffect } from 'react';
 import { fetchClubByName, fetchNormalUser, switchUsername2Id } from "./backendAPI";
 import { jwtDecode } from "jwt-decode";
+import { useAuth } from './authContext';
 
+type AuthStateCallback = () => void;
+const listeners: AuthStateCallback[] = [];
+
+export function onAuthStateChanged(callback: AuthStateCallback) {
+  listeners.push(callback);
+  
+  // Return unsubscribe function
+  return () => {
+    const index = listeners.indexOf(callback);
+    if (index > -1) {
+      listeners.splice(index, 1);
+    }
+  };
+}
+
+export function notifyAuthStateChange() {
+  listeners.forEach(callback => callback());
+}
 
 export function useIsUserSignedIn() {
-  const [isSignedIn, setIsSignedIn] = useState(false);
-
-  useEffect(() => {
-    const userToken = localStorage.getItem('userToken');
-    setIsSignedIn(userToken !== null);
-  }, []);
-
+  const { isSignedIn } = useAuth();
   return isSignedIn;
 }
 
 export const getCurrentUser = async () => {
-  console.log(`getCurrentUser called`);
-  try{
+  try {
     const userType = localStorage.getItem('userType');
-    if(userType === 'normal'){
+    if(userType === 'normal') {
       const userToken = localStorage.getItem('userToken');
       if (!userToken) return null;
       const decodedToken = jwtDecode<{ username: string }>(userToken);
-      const userId = switchUsername2Id(decodedToken.username);
-      const user = await fetchNormalUser(await userId);
+      const userId = await switchUsername2Id(decodedToken.username);
+      const user = await fetchNormalUser(userId);
       return user;
     }
-    else if(userType === 'club'){
+    else if(userType === 'club') {
       const userToken = localStorage.getItem('userToken');
       if (!userToken) return null;
       const decodedToken = jwtDecode<{ username: string }>(userToken);
-      const user = fetchClubByName(decodedToken.username);
-      console.log(`user: ${user}`);
+      const user = await fetchClubByName(decodedToken.username);
       return user;
     }
-    
+    return null;
   } catch (error) {
-    // Handle the error
     console.error(error);
+    return null;
   }
 }
 
@@ -53,19 +63,17 @@ export function getUserType() {
 }
 
 export const ProtectedRoute = ({ children } : Readonly<{children:ReactNode}>) => {
-    const status = useIsUserSignedIn();
-    if(!status){
-        redirect('/sing-up');
-    } else {
-        return children;
-    }
+  const { isSignedIn } = useAuth();
+  if(!isSignedIn) {
+    redirect('/sign-in');
+  }
+  return children;
 }
 
 export const UnprotectedRoute = ({ children } : Readonly<{children:ReactNode}>) => {
-    const status = useIsUserSignedIn();
-    if(status){
-        return <></>;
-    } else {
-        return children;
-    }
+  const { isSignedIn } = useAuth();
+  if(isSignedIn) {
+    return null;
+  }
+  return children;
 }

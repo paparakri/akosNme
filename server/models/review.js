@@ -35,5 +35,21 @@ const ReviewSchema = new mongoose.Schema({
     },{timestamps:true}
 );
 
+ReviewSchema.post('save', async function(doc) {
+     try {
+       if (this.isNew) {
+         await feedService.createReviewPost(
+           doc.user,
+           doc.club,
+           doc._id,
+           doc.rating,
+           doc.text
+         );
+       }
+     } catch (error) {
+       console.error('Error creating feed post for review:', error);
+     }
+});
+
 const Review = mongoose.model("Review", ReviewSchema);
 module.exports = Review;

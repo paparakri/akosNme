@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -23,6 +23,7 @@ import 'react-day-picker/dist/style.css';
 import { getCurrentUser } from '@/app/lib/userStatus';
 import { fetchClubReservations, fetchNormalUser, updateReservation } from '@/app/lib/backendAPI';
 import { CustomCalendar } from '../customCalendar';
+import { useToast } from '@chakra-ui/react';
 
 // Mock data for demonstration
 const mockReservations = [
@@ -112,13 +113,13 @@ const ReservationCard = ({ reservation, onStatusChange }) => (
 
       <div className="flex space-x-2 pt-2">
         <button
-          onClick={() => onStatusChange(reservation.id, 'approved')}
+          onClick={() => onStatusChange(reservation._id, 'approved')}
           className="flex-1 rounded-lg bg-green-500/20 py-2 text-sm font-medium text-green-400 hover:bg-green-500/30"
         >
           Approve
         </button>
         <button
-          onClick={() => onStatusChange(reservation.id, 'rejected')}
+          onClick={() => onStatusChange(reservation._id, 'rejected')}
           className="flex-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30"
         >
           Reject
@@ -190,28 +191,85 @@ const ReservationManagement = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [actionDetails, setActionDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const toast = useToast();
+
+  const fetchCurrentUser = async () => {
+    const club = await getCurrentUser();
+    const rawReservations = await fetchClubReservations(club._id);
+    const reservationsWithCustomerName = await Promise.all(
+      rawReservations.reverse().map(async (reservation: any) => {
+        const user = await fetchNormalUser(reservation.user);
+        return {
+          ...reservation,
+          customerName: user?.firstName + " " + user?.lastName || 'Unknown User'
+        };
+      })
+    );
+    
+    console.log("Reservations with customer name: ", reservationsWithCustomerName);
+    setReservations(reservationsWithCustomerName);
+  };
+
+  const handleReservationUpdate = async (event: MessageEvent) => {
+    try {
+      console.log("Event data: ", event.data);
+      fetchCurrentUser();
+      const data = JSON.parse(event.data);
+      if (data.type === 'reservation_created' || data.type === 'reservation_updated' || data.type === 'reservation_deleted') {
+        const club = await getCurrentUser();
+      }
+    } catch (error) {
+      console.error('Error handling SSE message:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      const club = await getCurrentUser();
-      const rawReservations = await fetchClubReservations(club._id);
-      const reservationsWithCustomerName = await Promise.all(
-        rawReservations.map(async (reservation) => {
-          const user = await fetchNormalUser(reservation.user);
-          return {
-            ...reservation,
-            customerName: user?.firstName + " " + user?.lastName || 'Unknown User'
-          };
-        })
-      );
-      
-      console.log("Reservations with customer name: ", reservationsWithCustomerName);
-      setReservations(reservationsWithCustomerName);
-    };
     fetchCurrentUser();
   }, []);
 
+  const initializeSSE = useCallback(async () => {
+    const club = await getCurrentUser();
+    if (club?._id) {
+      const eventSource = new EventSource(
+        `http://127.0.0.1:3500/club/${club._id}/reservations/stream`
+      );
+      
+      eventSource.onmessage = handleReservationUpdate;
+      
+      eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        eventSource.close();
+        
+        // Add more detailed error logging
+        if (eventSource.readyState === EventSource.CLOSED) {
+          console.log('Connection was closed');
+        } else if (eventSource.readyState === EventSource.CONNECTING) {
+          console.log('Attempting to reconnect...');
+        }
+        
+        // Attempt to reconnect after 5 seconds
+        setTimeout(() => initializeSSE(), 5000);
+      };
+  
+      return () => {
+        eventSource.close();
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    const cleanup = initializeSSE();
+    return () => {
+      cleanup?.then(cleanupFn => cleanupFn?.());
+    };
+  }, [initializeSSE]);
+
+
   const handleStatusChange = async (reservationId, newStatus) => {
+
+    console.log('Reservation ID:', reservationId);
+    console.log('New Status:', newStatus);
+
     setActionDetails({ reservationId, newStatus });
     setShowConfirmDialog(true);
   };
@@ -219,7 +277,7 @@ const ReservationManagement = () => {
   const confirmStatusChange = async () => {
     // API call would go here
 
-    const reservation = reservations.find(r => r.id === actionDetails?.reservationId);
+    const reservation = reservations.find(r => r._id === actionDetails?.reservationId);
     if (reservation) {
       await updateReservation({
         ...reservation,
@@ -246,7 +304,7 @@ const ReservationManagement = () => {
           })
           .map(reservation => (
             <ReservationCard
-              key={reservation.id}
+              key={reservation._id}
               reservation={reservation}
               onStatusChange={handleStatusChange}
             />
@@ -277,7 +335,7 @@ const ReservationManagement = () => {
               .filter(r => r.date === selectedDate.toLocaleDateString('en-GB').split('/').join('-'))
               .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
               .map(reservation => (
-                <div key={reservation.id} className="flex items-center justify-between p-4">
+                <div key={reservation._id} className="flex items-center justify-between p-4">
                   <div className="flex items-center space-x-4">
                     <div className="text-2xl font-bold text-white">
                       {new Date(reservation.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -356,7 +414,7 @@ const ReservationManagement = () => {
           <tbody className="divide-y divide-gray-800">
             {/* Future Reservations */}
             {futureReservations.map(reservation => (
-              <tr key={reservation.id} className="group hover:bg-gray-800/50">
+              <tr key={reservation._id} className="group hover:bg-gray-800/50">
                 <td className="p-4 text-white">{reservation.customerName}</td>
                 <td className="p-4 text-gray-400">{reservation.date}</td>
                 <td className="p-4 text-gray-400">
@@ -378,13 +436,13 @@ const ReservationManagement = () => {
                     {reservation.status === 'pending' && (
                       <>
                         <button
-                          onClick={() => handleStatusChange(reservation.id, 'approved')}
+                          onClick={() => handleStatusChange(reservation._id, 'approved')}
                           className="rounded-full p-1 text-green-400 hover:bg-green-500/20"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleStatusChange(reservation.id, 'rejected')}
+                          onClick={() => handleStatusChange(reservation._id, 'rejected')}
                           className="rounded-full p-1 text-red-400 hover:bg-red-500/20"
                         >
                           <X className="h-4 w-4" />
@@ -410,7 +468,7 @@ const ReservationManagement = () => {
   
             {/* Past Reservations */}
             {pastReservations.map(reservation => (
-              <tr key={reservation.id} className="group hover:bg-gray-800/50">
+              <tr key={reservation._id} className="group hover:bg-gray-800/50">
                 <td className="p-4 text-white">{reservation.customerName}</td>
                 <td className="p-4 text-gray-400">{reservation.date}</td>
                 <td className="p-4 text-gray-400">

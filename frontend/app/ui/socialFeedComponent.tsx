@@ -1,328 +1,315 @@
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Star, Clock, MessageCircle, Heart, Share2, ChevronDown } from 'lucide-react';
-import { format, parseISO, isValid } from 'date-fns';
-import { fetchUserFeed } from '@/app/lib/backendAPI';
+import { FeedItem, fetchUserFeed, getActivityContext } from '@/app/lib/backendAPI';
+import { MessageSquare, Share2, MoreVertical, Users, Lock, Clock, Calendar, Star, UserPlus, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
-interface FeedItem {
-  _id: string;
-  actor: {
-    displayName: string;
-    picturePath?: string;
-  };
-  verb: 'posted_review' | 'made_reservation' | 'followed_club' | 'followed_provider' | 'upcoming_event';
-  object: {
-    content: {
-      rating?: number;
-      reviewText?: string;
-      clubName?: string;
-      clubUsername?: string;
-      date?: string;
-      eventName?: string;
-      description?: string;
-      specialRequests?: string;
-    };
-  };
-  createdAt: string;
+// Updated interfaces to match exact MongoDB structure
+interface MongoId {
+  $oid: string;
 }
+
+interface MongoDate {
+  $date: string;
+}
+
+interface Actor {
+  userId: MongoId;
+  userType: 'normal' | 'club';
+  displayName: string;
+  picturePath: string;
+}
+
+interface FeedContent {
+  date?: string;
+  clubName?: string;
+  clubUsername?: string;
+  specialRequests?: string;
+  rating?: number;
+  reviewText?: string;
+  eventName?: string;
+  description?: string;
+}
+
+interface FeedObject {
+  targetId: MongoId;
+  targetType: string;
+  content: FeedContent;
+}
+
+interface Metadata {
+  privacy: 'public' | 'private' | 'followers';
+  tags: string[];
+}
+
+interface FeedItemType {
+  _id: MongoId;
+  actor: Actor;
+  verb: 'made_reservation' | 'posted_review' | 'upcoming_event';
+  object: FeedObject;
+  metadata: Metadata;
+  createdAt: MongoDate;
+  updatedAt: MongoDate;
+}
+
+const timeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + ' years ago';
+  
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + ' months ago';
+  
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + ' days ago';
+  
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + ' hours ago';
+  
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + ' minutes ago';
+  
+  return Math.floor(seconds) + ' seconds ago';
+};
 
 interface FeedItemProps {
-  item: FeedItem;
+  item: FeedItemType;
 }
-
-interface SocialFeedProps {
-  userId: string;
-  feedType?: 'all' | 'following' | 'recommended';
-}
-
-const formatDate = (dateString: string | Date | undefined): string => {
-  if (!dateString) return 'Date not available';
-  
-  try {
-    if (typeof dateString === 'string' && dateString.includes('-')) {
-      const [day, month, year] = dateString.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      if (isValid(date)) {
-        return format(date, 'PPP');
-      }
-    }
-
-    const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString);
-    if (isValid(date)) {
-      return format(date, 'PPP');
-    }
-
-    return 'Invalid date';
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Invalid date';
-  }
-};
-
-const ActionBadge: React.FC<{ type: FeedItem['verb'] }> = ({ type }) => {
-  const badges = {
-    posted_review: { color: 'bg-blue-500', icon: Star, text: 'Review' },
-    made_reservation: { color: 'bg-green-500', icon: Calendar, text: 'Reservation' },
-    followed_club: { color: 'bg-blue-500', icon: Heart, text: 'New Follow' },
-    followed_provider: { color: 'bg-purple-500', icon: Heart, text: 'New Follow' },
-    upcoming_event: { color: 'bg-pink-500', icon: Calendar, text: 'Event' }
-  };
-
-  const { color, icon: Icon, text } = badges[type];
-  
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color} text-white`}>
-      <Icon className="w-3 h-3 mr-1" />
-      {text}
-    </span>
-  );
-};
 
 const FeedItemCard: React.FC<FeedItemProps> = ({ item }) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const [likes, setLikes] = useState(Math.floor(Math.random() * 50));
-
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikes(prev => isLiked ? prev - 1 : prev + 1);
-  };
-
   return (
     <motion.div
+      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md 
-                 transition-all duration-300 border border-gray-200 dark:border-gray-700"
+      className="bg-gray-900 rounded-xl p-6 mb-6 border border-gray-800"
     >
       {/* Header */}
-      <div className="p-4 flex items-start justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-pink-500 p-[2px]">
-              <div className="w-full h-full rounded-full overflow-hidden">
-                <img
-                  src={item.actor.picturePath || '/default-avatar.svg'}
-                  alt={item.actor.displayName}
-                  className="w-full h-full object-cover"
-                />
+            <img
+              src={item.actor.picturePath || '/api/placeholder/40/40'}
+              alt={item.actor.displayName}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            {item.actor.userType === 'club' && (
+              <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1">
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-            </div>
+            )}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">
-              {item.actor.displayName}
-            </h3>
-            <div className="flex items-center space-x-2 mt-1">
-              <ActionBadge type={item.verb} />
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {formatDate(item.createdAt)}
-              </span>
-            </div>
+            <h3 className="font-semibold text-white">{item.actor.displayName}</h3>
+            <span className="text-sm text-gray-400">{timeAgo(item.createdAt.$date)}</span>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pb-3">
-        {item.verb === 'posted_review' && (
+      {/* Content based on verb type */}
+      <div className="space-y-4">
+        {item.verb === 'made_reservation' && (
           <div className="space-y-2">
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Star
-                  key={index}
-                  className={`w-5 h-5 ${
-                    index < (item.object.content.rating || 0)
-                      ? 'text-yellow-400 fill-yellow-400'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
+            <div className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-purple-400" />
+              <p className="text-purple-400 font-medium">
+                Made a reservation at{' '}
+                <Link 
+                  href={`/club/${item.object.content.clubUsername}`}
+                  className="hover:text-purple-300 transition-colors"
+                >
+                  {item.object.content.clubName}
+                </Link>
+              </p>
             </div>
-            <p className="text-gray-600 dark:text-gray-300">
-              {item.object.content.reviewText}
-            </p>
-            <Link
-              href={`/club/${item.object.content.clubUsername}`}
-              className="inline-flex items-center space-x-1 text-blue-500 hover:text-blue-600 
-                         transition-colors duration-200"
-            >
-              <span>{item.object.content.clubName}</span>
-            </Link>
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-300">{item.object.content.date}</span>
+              </div>
+              {item.object.content.specialRequests && (
+                <p className="text-gray-400 italic">
+                  "{item.object.content.specialRequests}"
+                </p>
+              )}
+            </div>
           </div>
         )}
 
-        {item.verb === 'made_reservation' && (
-          <div className="space-y-3">
-            <div className="flex items-start space-x-3">
-              <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
-              <div>
-                <p className="text-gray-900 dark:text-white">
-                  Reserved at{' '}
-                  <Link
-                    href={`/club/${item.object.content.clubUsername}`}
-                    className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
-                  >
-                    {item.object.content.clubName}
-                  </Link>
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {formatDate(item.object.content.date)}
-                </p>
-              </div>
+        {item.verb === 'posted_review' && (
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              <p className="text-yellow-500 font-medium">
+                Reviewed{' '}
+                <Link 
+                  href={`/club/${item.object.content.clubUsername}`}
+                  className="hover:text-yellow-400 transition-colors"
+                >
+                  {item.object.content.clubName}
+                </Link>
+              </p>
             </div>
-            {item.object.content.specialRequests && (
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                <p className="text-sm text-gray-600 dark:text-gray-300 italic">
-                  "{item.object.content.specialRequests}"
-                </p>
+            <p className="text-gray-200">{item.object.content.reviewText}</p>
+            {item.object.content.rating && (
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: item.object.content.rating }).map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                ))}
               </div>
             )}
           </div>
         )}
 
         {item.verb === 'upcoming_event' && (
-          <div className="space-y-3">
-            <h4 className="font-semibold text-gray-900 dark:text-white">
-              {item.object.content.eventName}
-            </h4>
-            <p className="text-gray-600 dark:text-gray-300">
-              {item.object.content.description}
-            </p>
-            <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>{formatDate(item.object.content.date)}</span>
-              </div>
-              <Link
-                href={`/club/${item.object.content.clubUsername}`}
-                className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
-              >
-                {item.object.content.clubName}
-              </Link>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-blue-400" />
+              <p className="text-blue-400 font-medium">
+                New Event: {item.object.content.eventName}
+              </p>
+            </div>
+            <p className="text-gray-200">{item.object.content.description}</p>
+            <div className="bg-blue-500/10 rounded-lg p-4">
+              <p className="text-blue-400 font-medium">
+                📅 {item.object.content.date}
+              </p>
+              <p className="text-gray-400 mt-1">
+                📍 {item.object.content.clubName}
+              </p>
             </div>
           </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleLike}
-            className={`flex items-center space-x-1.5 ${
-              isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
-            } hover:text-red-500 transition-colors duration-200`}
-          >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-            <span className="text-sm">{likes}</span>
-          </button>
-          <button className="flex items-center space-x-1.5 text-gray-500 dark:text-gray-400 
-                           hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-sm">Comment</span>
-          </button>
-          <button className="flex items-center space-x-1.5 text-gray-500 dark:text-gray-400 
-                           hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
-            <Share2 className="w-5 h-5" />
-            <span className="text-sm">Share</span>
-          </button>
-        </div>
+      <div className="mt-6 flex items-center space-x-6">
+        <button className="group flex items-center space-x-2 text-gray-400 hover:text-blue-500 transition-colors">
+          <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span>Comment</span>
+        </button>
+        
+        <button className="group flex items-center space-x-2 text-gray-400 hover:text-purple-500 transition-colors">
+          <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span>Share</span>
+        </button>
+
+        {/* Privacy indicator */}
+        {item.metadata?.privacy && item.metadata.privacy !== 'public' && (
+          <div className="ml-auto flex items-center space-x-1 text-gray-400">
+            <Lock className="w-4 h-4" />
+            <span className="text-sm">{item.metadata.privacy}</span>
+          </div>
+        )}
       </div>
     </motion.div>
   );
 };
 
+interface SocialFeedProps {
+  userId: string;
+  feedType?: 'all' | 'following' | 'recommended';
+}
+
 const SocialFeed: React.FC<SocialFeedProps> = ({ userId, feedType = 'all' }) => {
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [feedItems, setFeedItems] = useState<FeedItemType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  const loadMore = async () => {
+  console.log(feedItems);
+
+  const loadFeed = async (pageNum: number = 1, append: boolean = false) => {
     try {
-      const data = await fetchUserFeed(userId, page, 20);
+      setIsLoading(true);
+      const response = await fetchUserFeed(userId, pageNum);
       
-      if (!data) {
-        throw new Error('Failed to fetch feed data');
+      if (response) {
+        if (append) {
+          setFeedItems(prev => [...prev, ...response.feed]);
+        } else {
+          setFeedItems(response.feed);
+        }
+        setHasMore(response.hasMore);
+        setPage(response.nextPage);
       }
-      
-      setFeed(prev => [...prev, ...data.feed]);
-      setHasMore(data.hasMore);
-      setPage(prev => prev + 1);
     } catch (err) {
-      console.error('Feed fetch error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred loading your feed');
+      setError(err instanceof Error ? err.message : 'Failed to load feed');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    setFeed([]);
-    setPage(1);
-    setHasMore(true);
-    loadMore();
+    loadFeed(1, false);
   }, [userId, feedType]);
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 p-4 rounded-lg text-center">
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  if (feed.length === 0 && !isLoading) {
-    return (
-      <div className="text-center bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full 
-                      flex items-center justify-center">
-          <Clock className="w-8 h-8 text-gray-400" />
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          No Activity Yet
-        </h3>
-        <p className="text-gray-500 dark:text-gray-400">
-          Follow some clubs or friends to see their activity here!
-        </p>
+      <div className="bg-red-500/10 border border-red-500 rounded-xl p-8 text-center">
+        <p className="text-red-500">{error}</p>
+        <button 
+          onClick={() => loadFeed(1, false)}
+          className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <AnimatePresence>
-        {feed.map((item) => (
-          <FeedItemCard key={item._id} item={item} />
+      <AnimatePresence mode="popLayout">
+        {feedItems.map((item) => (
+          <FeedItemCard key={item._id.$oid} item={item} />
         ))}
       </AnimatePresence>
-      
+
       {isLoading && (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-gray-800 rounded-xl h-48 animate-pulse"
-            />
-          ))}
+        <div className="text-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
+          <p className="text-gray-400 mt-2">Loading feed...</p>
         </div>
       )}
-      
-      {hasMore && !isLoading && (
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={loadMore}
-          className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-pink-500 text-white 
-                     rounded-xl font-medium shadow-sm hover:shadow-md transition-all duration-200
-                     flex items-center justify-center space-x-2"
-        >
-          <span>Load More</span>
-          <ChevronDown className="w-5 h-5" />
-        </motion.button>
+
+      {!isLoading && feedItems.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Users className="w-12 h-12 text-purple-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Your feed is empty
+          </h3>
+          <p className="text-gray-400 mb-6">
+            Start following some venues and friends to see their updates here
+          </p>
+          <Link
+            href="/explore"
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg 
+                     font-medium hover:shadow-lg transition-all duration-200 inline-block"
+          >
+            Discover People & Venues
+          </Link>
+        </div>
+      )}
+
+      {hasMore && !isLoading && feedItems.length > 0 && (
+        <div className="text-center">
+          <button
+            onClick={() => loadFeed(page, true)}
+            className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            Load More
+          </button>
+        </div>
       )}
     </div>
   );

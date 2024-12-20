@@ -43,7 +43,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
     );
   }
 
-  if (events.length === 0) {
+  if (events && events.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
         <p className="text-gray-400">No upcoming events</p>
@@ -57,7 +57,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
       <div className="relative overflow-hidden">
         <div className="flex justify-center items-center h-64">
           <AnimatePresence mode="wait">
-            {events.map((event, index) => {
+            {events && events.map((event, index) => {
               console.log("Event id: ", event._id);
               console.log("Matching events: ", matchingEvents.map((e) => e._id));
               console.log(matchingEvents.some(e => e._id === event._id));
@@ -156,7 +156,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
       </div>
 
       {/* Navigation buttons */}
-      {events.length > 1 && (
+      {events && events.length > 1 && (
         <div className="absolute inset-y-0 left-0 right-0 flex justify-between items-center pointer-events-none">
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -180,7 +180,7 @@ const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
       )}
 
       {/* Dots indicator */}
-      {events.length > 1 && (
+      {events && events.length > 1 && (
         <div className="flex justify-center gap-2 mt-4">
           {events.map((_, index) => (
             <motion.button

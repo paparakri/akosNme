@@ -1,23 +1,44 @@
 "use client"
+
 import axios from "axios";
-import { headers } from "next/headers";
+import Cookies from "js-cookie";
+import { notifyAuthStateChange } from "./userStatus";
 
 export const signInClubUser = async (data: any) => {
-    try{
+    try {
         const config = {
             headers: {
                 'Content-Type': 'application/json'
             }
         };
-
         console.log('Sending request to create club user');
         const res = await axios.post("http://127.0.0.1:3500/club", data, config);
         console.log('Club user created');
+        
+        // Set in localStorage
         localStorage.setItem('userToken', res.data.token);
         localStorage.setItem('userType', res.data.userType);
-        console.log('Club user info stored in local storage');
+        
+        // Set in cookies
+        Cookies.set('userToken', res.data.token, { 
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        Cookies.set('userType', res.data.userType, {
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        
+        console.log('Club user info stored in local storage and cookies');
+        notifyAuthStateChange();
+        return res.data;
     } catch (e) {
         console.error(e);
+        throw e;
     }
 }
 
@@ -29,14 +50,31 @@ export const loginClubUser = async (data: any) => {
             }
         };
         const res = await axios.post("http://127.0.0.1:3500/ClubLogin", data, config);
-
+        
+        // Set in localStorage
         localStorage.setItem('userToken', res.data.token);
         localStorage.setItem('userType', res.data.userType);
-
-        console.log('token saved in localStorage because of logging in');
+        
+        // Set in cookies
+        Cookies.set('userToken', res.data.token, { 
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        Cookies.set('userType', res.data.userType, {
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        
+        console.log('Auth data saved in localStorage and cookies');
+        notifyAuthStateChange();
+        return res.data;
     } catch (error) {
         console.error("Error submitting form:", error);
-        throw new Error(error);
+        throw error;
     }  
 }
 
@@ -48,11 +86,31 @@ export const signInNormalUser = async (data: any) => {
             }
         };
         const res = await axios.post("http://127.0.0.1:3500/UserRegister", data, config);
-
+        
+        // Set in localStorage
         localStorage.setItem('userToken', res.data.token);
         localStorage.setItem('userType', res.data.userType);
+        
+        // Set in cookies
+        Cookies.set('userToken', res.data.token, { 
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        Cookies.set('userType', res.data.userType, {
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        
+        notifyAuthStateChange();
+
+        return res.data;
     } catch (error) {
         console.error("Error submitting form:", error);
+        throw error;
     }
 }
 
@@ -64,23 +122,46 @@ export const loginNormalUser = async (data: any) => {
             }
         };
         const res = await axios.post("http://127.0.0.1:3500/UserLogin", data, config);
-
+        
+        // Set in localStorage
         localStorage.setItem('userToken', res.data.token);
         localStorage.setItem('userType', res.data.userType);
-
-        console.log('token saved in localStorage because of logging in');
-        return res;
+        
+        // Set in cookies
+        Cookies.set('userToken', res.data.token, { 
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        Cookies.set('userType', res.data.userType, {
+            expires: 7,
+            path: '/',
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        
+        console.log('Auth data saved in localStorage and cookies');
+        notifyAuthStateChange();
+        return res.data;
     } catch (error) {
         console.error("Error submitting form:", error);
-        throw new Error(error);
+        throw error;
     }
 }
 
 export const logout = () => {
-    try{
+    try {
+        // Clear localStorage
         localStorage.removeItem('userToken');
         localStorage.removeItem('userType');
-    } catch (error){
-        console.error(error);
+        
+        // Clear cookies
+        Cookies.remove('userToken', { path: '/' });
+        Cookies.remove('userType', { path: '/' });
+        notifyAuthStateChange();
+    } catch (error) {
+        console.error("Error during logout:", error);
+        throw error;
     }
 }

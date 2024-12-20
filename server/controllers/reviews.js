@@ -3,7 +3,6 @@ const NormalUser = require("../models/normalUser.js");
 const ServiceProviderUser = require("../models/serviceProviderUser.js");
 const Review = require("../models/review.js");
 const mongoose = require('mongoose');
-const { createFeedItem } = require('../helpers/feedItemCreator');
 
 //POST
 const addReview = async (req, res) => {
@@ -30,26 +29,6 @@ const addReview = async (req, res) => {
             rating: rating,
             reviewText: reviewText,
             date: Date.now()
-        });
-
-        await createFeedItem({
-            actor: {
-                userId: normalUser._id,
-                userType: 'normal',
-                displayName: normalUser.firstName + ' ' + normalUser.lastName,
-                picturePath: normalUser.picturePath
-            },
-            verb: 'posted_review',
-            object: {
-                targetId: newReview._id,
-                targetType: 'review',
-                content: {
-                    reviewText: newReview.reviewText,
-                    rating: newReview.rating,
-                    clubName: interestUser.displayName,
-                    clubUsername: interestUser.username
-                }
-            }
         });
 
         await NormalUser.updateOne(

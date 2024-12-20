@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
   PopoverContent,
   useDisclosure,
+  Text
 } from '@chakra-ui/react';
 
 import {
@@ -24,6 +25,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { UserMenu } from './userMenu';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useViewMode } from '../lib/viewModelContext';
+import ViewModeToggle from './viewModeToggle';
 
 interface User {
   _id: string;
@@ -44,6 +47,37 @@ interface NavItem {
   children?: Array<NavItem>;
   href?: string;
 }
+
+const NAV_ITEMS_CLUB_LOGGED_IN: Array<NavItem> = [
+  {
+    label: 'Homepage',
+    href: '/',
+  },
+  {
+    label: 'Dashboard',
+    href: '/dashboard',
+  },
+  {
+    label: 'Reservations',
+    href: '/dashboard/reservations',
+  },
+  {
+    label: 'Table Layout',
+    href: '/dashboard/tables',
+  },
+  {
+    label: 'Events',
+    href: '/dashboard/events',
+  },
+  {
+    label: 'Edit Profile',
+    href: '/dashboard/profile',
+  },
+  {
+    label: 'Settings',
+    href: '/dashboard/settings',
+  }
+]
 
 const NAV_ITEMS_NOT_LOGGED_IN: Array<NavItem> = [
   {
@@ -103,8 +137,15 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const isUserSignedIn = useIsUserSignedIn();
-  
-  const navItems = isUserSignedIn ? NAV_ITEMS_LOGGED_IN : NAV_ITEMS_NOT_LOGGED_IN;
+  const { viewMode } = useViewMode();
+  const userType = typeof window !== 'undefined' ? localStorage.getItem('userType') : null;
+  console.log("Here is the user type: ", userType);
+
+  const navItems = isUserSignedIn 
+    ? viewMode === 'club'
+      ? NAV_ITEMS_CLUB_LOGGED_IN 
+      : NAV_ITEMS_LOGGED_IN
+    : NAV_ITEMS_NOT_LOGGED_IN;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -146,8 +187,10 @@ export default function Navbar() {
     try {
       logout();
       setUser(undefined); // Clear user state immediately
-      router.push('/'); // Redirect to home
-      router.refresh(); // Force a refresh of the current route
+      console.log("Page should refrehs");
+      //router.refresh(); // Force a refresh of the current route
+      location.reload();
+      console.log("Page refreshed");
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -494,7 +537,9 @@ export default function Navbar() {
               </Stack>
             </AnimatePresence>
           ) : (
-            <UserMenu handleButtonClick={handleButtonClick} handleLogout={handleLogout} user={user} />
+            <>
+              <UserMenu handleButtonClick={handleButtonClick} handleLogout={handleLogout} user={user} />
+            </>
           )}
         </Stack>
       </MotionFlex>

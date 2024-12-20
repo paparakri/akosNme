@@ -148,8 +148,8 @@ export const fetchClubReservations = async (id: string) => {
 export const fetchClubInfo = async (user: any) => {
     try {
       const response = await axios.get(`http://127.0.0.1:3500/club/${user}`);
-      console.log("Response Data from fetchClubInfo: ");
-      console.log(response.data);
+      //console.log("Response Data from fetchClubInfo: ");
+      //console.log(response.data);
       return response.data;
     } catch (error) {
       console.error(`Error fetching club ${user} info: `, error);
@@ -201,8 +201,8 @@ export const fetchFeaturedClubsDetails = async (location: Coordinates) => {
 export const fetchClubByName = async (clubName: string) => {
     try {
         const response = await axios.get(`http://127.0.0.1:3500/club/${clubName}/byName`);
-        console.log("Response Data from fetchClubInfo: ");
-        console.log(response.data);
+        //console.log("Response Data from fetchClubInfo: ");
+        //console.log(response.data);
         return response.data;
     } catch (error) {
         console.error(`Error fetching club ${clubName} info: `, error);

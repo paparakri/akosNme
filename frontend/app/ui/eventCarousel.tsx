@@ -110,7 +110,7 @@ const EventCarousel = ({ clubId }) => {
   }
 
   // No events state
-  if (events.length === 0) {
+  if (!events || events.length === 0) {
     return (
       <div className="h-96 flex items-center justify-center">
         <div className="text-center p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
