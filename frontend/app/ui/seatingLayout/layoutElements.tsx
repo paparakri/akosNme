@@ -1,12 +1,15 @@
 import React from 'react';
 import { Layer, Group, Rect, Text, Transformer } from 'react-konva';
 import { elementTemplates } from './elementTemplates';
+import { useLayoutStore } from './layoutStore';
 import type { LayoutElement } from './types';
+import { KonvaEventObject } from 'konva/lib/Node';
+import { Node, NodeConfig } from 'konva/lib/Node';
 
 interface ElementProps {
   element: LayoutElement;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (evt: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => void;
   onChange: (updates: Partial<LayoutElement>) => void;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -22,6 +25,7 @@ export const Element: React.FC<ElementProps> = ({
 }) => {
   const shapeRef = React.useRef<any>(null);
   const transformerRef = React.useRef<any>(null);
+  const { grid } = useLayoutStore();
 
   React.useEffect(() => {
     if (isSelected && transformerRef.current && shapeRef.current) {
@@ -31,23 +35,73 @@ export const Element: React.FC<ElementProps> = ({
   }, [isSelected]);
 
   const template = elementTemplates[element.type];
+
+  const snapToGrid = (value: number): number => {
+    if (!grid.snap) return value;
+    const gridSize = grid.size;
+    return Math.round(value / gridSize) * gridSize;
+  };
+
+  const handleDragMove = (e: any) => {
+    if (!grid.snap) return;
+    
+    const node = e.target;
+    const newPos = {
+      x: snapToGrid(node.x()),
+      y: snapToGrid(node.y())
+    };
+    
+    node.position(newPos);
+  };
+
   const handleTransform = () => {
     if (!shapeRef.current) return;
 
     const node = shapeRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-
+    
     node.scaleX(1);
     node.scaleY(1);
 
+    let newWidth = Math.max(template.minWidth, node.width() * scaleX);
+    let newHeight = Math.max(template.minHeight, node.height() * scaleY);
+    let newX = node.x();
+    let newY = node.y();
+    let newRotation = node.rotation();
+
+    if (grid.snap) {
+      newWidth = snapToGrid(newWidth);
+      newHeight = snapToGrid(newHeight);
+      newX = snapToGrid(newX);
+      newY = snapToGrid(newY);
+      newRotation = Math.round(newRotation / 15) * 15;
+    }
+
     onChange({
-      x: node.x(),
-      y: node.y(),
-      width: Math.max(template.minWidth, node.width() * scaleX),
-      height: Math.max(template.minHeight, node.height() * scaleY),
-      rotation: node.rotation()
+      x: newX,
+      y: newY,
+      width: newWidth,
+      height: newHeight,
+      rotation: newRotation
     });
+  };
+
+  const handleClick = (evt: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+    onSelect(evt);
+  };
+
+  const handleTap = (evt: KonvaEventObject<Event, Node<NodeConfig>>) => {
+    const syntheticEvent = {
+      ...evt,
+      evt: new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+    } as KonvaEventObject<MouseEvent, Node<NodeConfig>>;
+    
+    onSelect(syntheticEvent);
   };
 
   return (
@@ -55,6 +109,7 @@ export const Element: React.FC<ElementProps> = ({
       <Group
         draggable={!element.isLocked}
         onDragStart={onDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={onDragEnd}
       >
         <Rect
@@ -68,8 +123,8 @@ export const Element: React.FC<ElementProps> = ({
           stroke={element.style?.stroke || template.style.stroke}
           strokeWidth={2}
           opacity={element.isLocked ? 0.5 : 1}
-          onClick={onSelect}
-          onTap={onSelect}
+          onClick={handleClick}
+          onTap={handleTap}
           onTransformEnd={handleTransform}
         />
         <Text
@@ -99,14 +154,24 @@ export const Element: React.FC<ElementProps> = ({
           boundBoxFunc={(oldBox, newBox) => {
             const minWidth = template.minWidth || 20;
             const minHeight = template.minHeight || 20;
+            
+            let snapBox = { ...newBox };
+            if (grid.snap) {
+              snapBox.width = snapToGrid(newBox.width);
+              snapBox.height = snapToGrid(newBox.height);
+              snapBox.x = snapToGrid(newBox.x);
+              snapBox.y = snapToGrid(newBox.y);
+            }
+            
             return {
-              ...newBox,
-              width: Math.max(minWidth, newBox.width),
-              height: Math.max(minHeight, newBox.height)
+              ...snapBox,
+              width: Math.max(minWidth, snapBox.width),
+              height: Math.max(minHeight, snapBox.height)
             };
           }}
           enabledAnchors={template.allowResize ? undefined : []}
           rotateEnabled={template.allowRotate}
+          rotationSnaps={grid.snap ? [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180] : []}
           anchorFill="#fff"
           anchorStroke="#666"
           anchorSize={8}

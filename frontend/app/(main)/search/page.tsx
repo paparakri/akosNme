@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaFire, FaGlassMartini, FaGraduationCap, FaUsers, FaHeart, FaGuitar, FaSort } from 'react-icons/fa';
 import { Filter, DollarSign, Clock, Music } from 'lucide-react';
@@ -14,8 +14,66 @@ import dynamic from 'next/dynamic';
 import { FaStar, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import PaginatedBarCards from '../../ui/paginatedBarCards';
 
-// Dynamic import for Map
-const Map = dynamic(() => import('../../ui/map'), {
+// Types
+interface Bar {
+  _id: string;
+  username: string;
+  displayName: string;
+  description: string;
+  location: {
+    type: string;
+    coordinates: [number, number];
+    address: string;
+  };
+  formattedPrice: number;
+  rating: number;
+  reviews: string[];
+  images?: string[];
+  amenities?: string[];
+  score?: number;
+}
+
+interface SearchParams {
+  searchQuery: string;
+  location: string;
+  date: string;
+  page: number;
+  limit: number;
+  filter: string;
+  sort: string;
+  minPrice?: number;
+  minAge?: string;
+  features?: string[];
+}
+
+interface AdditionalFilters {
+  minPrice: string;
+  minAge: string;
+  features: string[];
+}
+
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalResults: number;
+}
+
+interface MapMarker {
+  id: string;
+  position: [number, number];
+  title: string;
+  rating: number;
+  reviewCount: number;
+  address: string;
+}
+
+interface MapProps {
+  center: [number, number];
+  markers: MapMarker[];
+  onMarkerClick: (id: string) => void;
+}
+
+const Map = dynamic(() => import('../../ui/map').then(mod => mod.default as unknown as React.ComponentType<MapProps>), {
   ssr: false,
   loading: () => (
     <div className="h-[600px] w-full animate-pulse rounded-lg bg-gray-800 relative z-[20]" />
@@ -40,7 +98,12 @@ const SORT_OPTIONS = [
   { value: 'popularity', label: 'Most Popular', icon: FaFire }
 ];
 
-const SortingControl = ({ value, onChange }) => (
+interface SortingControlProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const SortingControl: React.FC<SortingControlProps> = ({ value, onChange }) => (
   <Popover className="relative">
     {({ open }) => (
       <>
@@ -90,7 +153,12 @@ const SortingControl = ({ value, onChange }) => (
   </Popover>
 );
 
-const AdditionalFilters = ({ filters, onChange }) => (
+interface AdditionalFiltersProps {
+  filters: AdditionalFilters;
+  onChange: (key: keyof AdditionalFilters, value: string | string[]) => void;
+}
+
+const AdditionalFilters: React.FC<AdditionalFiltersProps> = ({ filters, onChange }) => (
   <Popover className="relative">
     {({ open }) => (
       <>
@@ -119,16 +187,14 @@ const AdditionalFilters = ({ filters, onChange }) => (
         >
           <Popover.Panel
             className="absolute right-0 z-[60] mt-2 w-80 rounded-lg bg-gray-900 p-4 shadow-lg ring-1 ring-white/10"
-            style={{zIndex: 60}}
           >
-          <div className="space-y-4">
-              {/* Price Filter */}
+            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-300">Maximum Price</label>
                 <input
                   type="number"
                   min="0"
-                  value={filters.minPrice || ''}
+                  value={filters.minPrice}
                   onChange={(e) => onChange('minPrice', e.target.value)}
                   className="mt-1 w-full rounded-md bg-gray-800 px-3 py-2 text-white"
                   placeholder="Enter maximum price"
@@ -138,11 +204,10 @@ const AdditionalFilters = ({ filters, onChange }) => (
                 </p>
               </div>
 
-              {/* Age Filter */}
               <div>
                 <label className="text-sm font-medium text-gray-300">Your Age</label>
                 <select
-                  value={filters.minAge || ''}
+                  value={filters.minAge}
                   onChange={(e) => onChange('minAge', e.target.value)}
                   className="mt-1 w-full rounded-md bg-gray-800 px-3 py-2 text-white"
                 >
@@ -157,7 +222,6 @@ const AdditionalFilters = ({ filters, onChange }) => (
                 </p>
               </div>
 
-              {/* Features Filter */}
               <div>
                 <label className="text-sm font-medium text-gray-300">Features</label>
                 <div className="mt-2 grid grid-cols-2 gap-2">
@@ -187,38 +251,36 @@ const AdditionalFilters = ({ filters, onChange }) => (
   </Popover>
 );
 
-const SearchResultsPage = () => {
+// Create a client component that uses useSearchParams
+const SearchResultsContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  //Get Search Params to set as initial states where they exist
   const initialSort = searchParams.get('sort') || 'rating';
   const initialFilter = searchParams.get('filter') || 'all';
   const initialView = searchParams.get('view') || 'grid';
   const initialPage = parseInt(searchParams.get('page') || '1');
   
-  // Get additional filters from URL params
-  const initialAdditionalFilters = {
+  const initialAdditionalFilters: AdditionalFilters = {
     minPrice: searchParams.get('minPrice') || '',
     minAge: searchParams.get('minAge') || '',
     features: searchParams.get('features')?.split(',').filter(Boolean) || []
   };
 
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<Bar[]>([]);
   const [selectedFilter, setSelectedFilter] = useState(initialFilter);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState(initialView);
-  const [additionalFilters, setAdditionalFilters] = useState(initialAdditionalFilters);
-  const [pagination, setPagination] = useState({
+  const [additionalFilters, setAdditionalFilters] = useState<AdditionalFilters>(initialAdditionalFilters);
+  const [pagination, setPagination] = useState<Pagination>({
     currentPage: initialPage,
     totalPages: 1,
     totalResults: 0
   });
-  const [allResults, setAllResults] = useState([]);
+  const [allResults, setAllResults] = useState<Bar[]>([]);
   const [sortBy, setSortBy] = useState(initialSort);
 
-  // Get search parameters
   const query = searchParams.get('q') || '';
   const location = searchParams.get('location') || '';
   const dateParam = searchParams.get('date') || '';
@@ -236,8 +298,8 @@ const SearchResultsPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('view', view);
-    router.push(`/search?${params.toString()}`, { shallow: true });
-  }, [view]);
+    router.push(`/search?${params.toString()}`);
+  }, [view, router, searchParams]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -260,8 +322,8 @@ const SearchResultsPage = () => {
       params.delete('features');
     }
     
-    router.push(`/search?${params.toString()}`, { shallow: true });
-  }, [additionalFilters]);
+    router.push(`/search?${params.toString()}`);
+  }, [additionalFilters, router, searchParams]);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -269,8 +331,7 @@ const SearchResultsPage = () => {
       setError(null);
     
       try {
-        // First fetch total count
-        const initialResponse = await searchBars({
+        const searchParams: SearchParams = {
           searchQuery: query,
           location,
           date: dateParam,
@@ -278,30 +339,27 @@ const SearchResultsPage = () => {
           limit: 10,
           filter: selectedFilter,
           sort: sortBy,
-          ...additionalFilters
-        });
+          minPrice: additionalFilters.minPrice ? Number(additionalFilters.minPrice) : undefined,
+          minAge: additionalFilters.minAge,
+          features: additionalFilters.features
+        };
+
+        const initialResponse = await searchBars(searchParams);
 
         if (!initialResponse) {
           throw new Error('Failed to fetch initial results');
         }
 
-        // Then fetch all pages if we have results
         const totalPages = Math.ceil(initialResponse.pagination.total / 10);
         const allResponse = totalPages > 1 ? await Promise.all(
           Array.from({ length: totalPages }, (_, i) =>
             searchBars({
-              searchQuery: query,
-              location,
-              date: dateParam,
-              page: i + 1,
-              limit: 10,
-              filter: selectedFilter,
-              sort: sortBy,
-              ...additionalFilters
+              ...searchParams,
+              page: i + 1
             })
           )
         ).then(responses => ({
-          results: responses.filter(r => r).flatMap(r => r.results),
+          results: responses.filter(Boolean).flatMap(r => r?.results || []),
           pagination: initialResponse.pagination
         })) : initialResponse;
     
@@ -309,17 +367,10 @@ const SearchResultsPage = () => {
           setAllResults(allResponse.results);
         }
     
-        // Only fetch paginated results if in grid view
         if (view === 'grid') {
           const paginatedResponse = await searchBars({
-            searchQuery: query,
-            location,
-            date: dateParam,
-            page: pagination.currentPage,
-            limit: 10,
-            filter: selectedFilter,
-            sort: sortBy,
-            ...additionalFilters
+            ...searchParams,
+            page: pagination.currentPage
           });
     
           if (paginatedResponse) {
@@ -340,7 +391,7 @@ const SearchResultsPage = () => {
 
     const debounced = setTimeout(() => {
       fetchResults();
-    }, 300); // Add a small debounce to prevent rapid reloads
+    }, 300);
 
     return () => clearTimeout(debounced);
   }, [
@@ -349,11 +400,8 @@ const SearchResultsPage = () => {
     dateParam, 
     selectedFilter, 
     sortBy,
-    // Only include pagination.currentPage instead of entire pagination object
     pagination.currentPage,
-    // Only trigger on view changes if switching to grid view
     view === 'grid' ? view : null,
-    // Convert additionalFilters to a string to prevent unnecessary rerenders
     JSON.stringify(additionalFilters)
   ]);
 
@@ -370,17 +418,15 @@ const SearchResultsPage = () => {
           <div className="max-w-4xl mx-auto">
             <SearchBar />
 
-            {/* Combined Filters */}
             <div className="mt-6 flex flex-wrap justify-center gap-4">
               {filters.map((filter) => (
                 <button
                   key={filter.id}
                   onClick={() => {
                     setSelectedFilter(filter.id);
-                    // Update URL search params
                     const params = new URLSearchParams(searchParams.toString());
                     params.set('filter', filter.id);
-                    params.set('page', '1'); // Reset to first page when changing filters
+                    params.set('page', '1');
                     router.push(`/search?${params.toString()}`);
                   }}
                   className={`px-4 py-2 rounded-full flex items-center space-x-2 transition-all duration-300
@@ -400,7 +446,6 @@ const SearchResultsPage = () => {
                     ...prev,
                     [key]: value
                   }));
-                  // Reset to page 1 when filters change
                   const params = new URLSearchParams(searchParams.toString());
                   params.set('page', '1');
                   router.push(`/search?${params.toString()}`);
@@ -411,9 +456,7 @@ const SearchResultsPage = () => {
         </div>
       </div>
 
-      {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Search info and view toggle */}
         <div className="mb-8 flex flex-wrap justify-between items-center gap-4">
           <h2 className="text-xl font-semibold">
             {isLoading ? (
@@ -421,7 +464,7 @@ const SearchResultsPage = () => {
             ) : error ? (
               'Error loading results'
             ) : (
-              `${ (view === 'grid') ? pagination.totalResults : allResults.length} results found`
+              `${(view === 'grid') ? pagination.totalResults : allResults.length} results found`
             )}
           </h2>
           <div className="flex items-center gap-4">
@@ -429,10 +472,9 @@ const SearchResultsPage = () => {
               value={sortBy}
               onChange={(value) => {
                 setSortBy(value);
-                // Update URL search params
                 const params = new URLSearchParams(searchParams.toString());
                 params.set('sort', value);
-                params.set('page', '1'); // Reset to first page when changing sort
+                params.set('page', '1');
                 router.push(`/search?${params.toString()}`);
               }}
             />
@@ -454,7 +496,6 @@ const SearchResultsPage = () => {
           </div>
         </div>
 
-        {/* Loading and Error States */}
         {isLoading && (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -467,7 +508,6 @@ const SearchResultsPage = () => {
           </div>
         )}
 
-        {/* Results Display */}
         {!isLoading && !error && (
           view === 'grid' ? (
             <PaginatedBarCards
@@ -477,19 +517,19 @@ const SearchResultsPage = () => {
             <div className="h-[600px] rounded-lg overflow-hidden">
               <Map
                 center={[37.97914, 23.72754]}
-                markers={allResults.map(club => ({
+                markers={allResults.map((club): MapMarker => ({
                   id: club._id,
-                  position: club.location.coordinates ? [
-                    club.location.coordinates[1], // latitude
-                    club.location.coordinates[0]  // longitude
-                  ] : [37.97914, 23.72754], // default to Athens if no coordinates
+                  position: [
+                    club.location.coordinates[1],
+                    club.location.coordinates[0]
+                  ] as [number, number],
                   title: club.displayName,
                   rating: club.rating,
-                  reviewCount: club.reviews?.length,
-                  address: club.address
+                  reviewCount: club.reviews?.length || 0,
+                  address: club.location.address
                 }))}
-                onMarkerClick={(id) => {
-                  const club = results.find(c => c._id === id);
+                onMarkerClick={(id: string) => {
+                  const club = allResults.find(c => c._id === id);
                   if (club) {
                     router.push(`/club/${club.username}`);
                   }
@@ -500,6 +540,22 @@ const SearchResultsPage = () => {
         )}
       </div>
     </div>
+  );
+};
+
+// Create a loading component
+const SearchResultsLoading = () => (
+  <div className="min-h-screen bg-black text-white flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+  </div>
+);
+
+// Main page component that wraps the content in Suspense
+const SearchResultsPage: React.FC = () => {
+  return (
+    <Suspense fallback={<SearchResultsLoading />}>
+      <SearchResultsContent />
+    </Suspense>
   );
 };
 

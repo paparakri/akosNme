@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getCurrentUser } from "./userStatus";
 
 interface Coordinates {
     lat: number | null;
@@ -96,6 +97,7 @@ export const reverseGeocode = async (location: Coordinates) => {
 //RESERVATIONS
 export const postReservation = async (reservationData: any) => {
     try {
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Posting Reservation: ", reservationData)
         const response = await axios.post("http://127.0.0.1:3500/reservations", reservationData);
         return response.data;
     } catch (error) {
@@ -142,6 +144,16 @@ export const fetchClubReservations = async (id: string) => {
         console.error("Error fetching club reservations:", error);
         return null;
     }
+}
+
+export const fetchClubReservationsByDate = async (id: string, date: string) => {
+ try{
+    const response = await axios.get(`http://127.0.0.1:3500/club/${id}/reservations/${date}`);
+    return response.data;
+ } catch (error){
+    console.error("Error fetching club reservations by date:", error);
+    return null;
+ }
 }
 
 //CLUBS
@@ -326,9 +338,9 @@ export const addReview = async (clubId: string, userId: string, review: any) => 
 
 export const fetchReviewById = async (id: string) => {
     try {
-        console.log(`Sending GET to http://127.0.0.1:3500/review/${id}`);
+        //console.log(`Sending GET to http://127.0.0.1:3500/review/${id}`);
         const response = await axios.get(`http://127.0.0.1:3500/review/${id}`);
-        console.log(`!!!!!!!!!!!!!!!!!!!!!Printing response from review/${id}: `, response);
+        //console.log(`!!!!!!!!!!!!!!!!!!!!!Printing response from review/${id}: `, response);
         return response.data;
     } catch (error) {
         console.error(`Error fetching review ${id} info: `, error);
@@ -389,6 +401,17 @@ export const getAllEvents = async () => {
     }
 }
 
+export const updateEvent = async (eventData: any) => {
+    try {
+        const response = await axios.put(`http://127.0.0.1:3500/club/${eventData.club}/events`, eventData);
+        console.log("Update Event Response: ", response);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating event ${eventData.club}: `, error);
+        return null;
+    }
+}
+
 //IMAGE UPLOADING & DOWNLOADING
 interface UploadImageResponse {
     downloadURL: string;
@@ -409,8 +432,11 @@ export const uploadImage = async (file: File, folder: string, fileName?: string)
 
         // Make API call to your backend endpoint
         const { data } = await axios.post<UploadImageResponse>(
-            `http://127.0.0.1:3500/image/upload/${folder}/${fileName || ''}`,
-            formData,
+            `http://127.0.0.1:3500/image/upload/${fileName || ''}`,
+            {
+                ...formData,
+                folderPath: folder,
+            },
             {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -426,89 +452,17 @@ export const uploadImage = async (file: File, folder: string, fileName?: string)
 };
   
 export const getImage = async (fileName: string, folder: string) => {
-try {
-    // Make API call to your backend endpoint
-    const { data } = await axios.get(`http://127.0.0.1:3500/image/${folder}/${fileName}`);
-    return data.downloadURL;
-} catch (error) {
-    console.error('Error getting image:', error);
-    throw error;
-}
-};
-
-//FEED
-export interface FeedActor {
-    userId: string;
-    userType: 'normal' | 'club' | 'serviceProvider';
-    displayName: string;
-    picturePath?: string;
-}
-
-export interface FeedObject {
-    targetId: string;
-    targetType: string;
-    content: {
-        reviewText?: string;
-        rating?: number;
-        clubName?: string;
-        clubUsername?: string;
-        date?: string;
-        eventName?: string;
-        description?: string;
-        specialRequests?: string;
-    };
-}
-
-export interface FeedItem {
-    _id: string;
-    actor: FeedActor;
-    verb: 'posted_review' | 'made_reservation' | 'followed_club' | 'followed_provider' | 'upcoming_event';
-    object: FeedObject;
-    createdAt: string;
-}
-
-interface FeedResponse {
-    feed: FeedItem[];
-    hasMore: boolean;
-    nextPage: number;
-}
-
-export const fetchUserFeed = async (userId: string, page: number = 1, limit: number = 20): Promise<FeedResponse | null> => {
     try {
-        const response = await axios.get(`http://127.0.0.1:3500/user/${userId}/feed`, {
+        // Make API call to your backend endpoint
+        const { data } = await axios.get(`http://127.0.0.1:3500/image/${fileName}`, {
             params: {
-                page,
-                limit
+                folderPath: folder
             }
         });
-        
-        return response.data;
+        return data.downloadURL;
     } catch (error) {
-        console.error('Error fetching user feed:', error);
-        if (axios.isAxiosError(error)) {
-            throw new Error(error.response?.data?.message || 'Failed to fetch feed');
-        }
+        console.error('Error getting image:', error);
         throw error;
-    }
-};
-  
-export const getActivityContext = async (feedItem: FeedItem) => {
-    try {
-      switch (feedItem.verb) {
-        case 'posted_review':
-          return await fetchReviewById(feedItem.object.targetId);
-        case 'made_reservation':
-          // You might want to add a function to fetch reservation details
-          return null;
-        case 'upcoming_event':
-          // Add function to fetch event details if needed
-          return null;
-        default:
-          return null;
-      }
-    } catch (error) {
-      console.error('Error fetching activity context:', error);
-      return null;
     }
 };
 
@@ -600,7 +554,6 @@ export const unfollowClub = async (userId: string, clubId: string): Promise<void
       throw new Error(error.response?.data?.message || 'Failed to unfollow club');
     }
 };
-
 
 //SEARCH FUNCTIONS
 interface SearchParams {
@@ -761,3 +714,80 @@ export const getRangeAvailability = async (clubId: string, startDate: string, en
         return null;
     }
 }
+
+//Feed Related Functions
+// Fetch feed posts with optional pagination
+export const fetchFeedPosts = async (
+    page: number = 1, 
+    limit: number = 20,
+    includeClubs: boolean = true,
+    includeFriends: boolean = true
+  ) => {
+    try {
+      // Get userId from localStorage or your auth state management
+      const user = await getCurrentUser();
+      const userId = user?._id.toString();
+      
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await axios.get(
+        `http://127.0.0.1:3500/user/feed/${userId}`,
+        {
+          params: {
+            userId: userId, // Make sure userId is passed directly, not as a Promise
+            page,
+            limit,
+            includeClubs,
+            includeFriends
+          }
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error('Failed to fetch feed posts');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching feed posts:', error);
+      throw error;
+    }
+};
+
+// Fetch feed posts for a specific user (useful for viewing other user's activities)
+export const fetchUserFeedPosts = async (
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+) => {
+    try {
+        const user = await getCurrentUser();
+        const userId = user?._id.toString();
+
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await axios.get(
+        `http://127.0.0.1:3500/user/feed/${userId}`,
+        {
+          params: {
+            userId,
+            page,
+            limit
+          }
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error('Failed to fetch user feed posts');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching user feed posts:', error);
+      throw error;
+    }
+};

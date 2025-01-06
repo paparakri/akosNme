@@ -19,7 +19,7 @@ interface FormErrors {
   password: string;
 }
 
-export function SignInPage() {
+function SignInPage() {
   const router = useRouter();
   const { updateAuthStatus } = useAuth();
   const [isLoading, setIsLoading] = useState(false);

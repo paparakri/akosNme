@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const feedService = require('../controllers/feed.js');
 
 const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
@@ -37,7 +38,6 @@ const ReviewSchema = new mongoose.Schema({
 
 ReviewSchema.post('save', async function(doc) {
      try {
-       if (this.isNew) {
          await feedService.createReviewPost(
            doc.user,
            doc.club,
@@ -45,7 +45,6 @@ ReviewSchema.post('save', async function(doc) {
            doc.rating,
            doc.text
          );
-       }
      } catch (error) {
        console.error('Error creating feed post for review:', error);
      }

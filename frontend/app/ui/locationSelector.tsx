@@ -12,9 +12,70 @@ import { MapPin } from 'lucide-react';
 import debounce from 'lodash/debounce';
 import { geocode } from '../lib/backendAPI';
 
-const LocationInput = ({ formData, setFormData }) => {
+type ImageFile = {
+  file: File;
+  preview: string;
+};
+
+type ContactInfo = {
+  email: string;
+  phone: string;
+};
+
+type SocialMediaLinks = {
+  facebook: string;
+  instagram: string;
+  twitter: string;
+};
+
+type Location = {
+  type: string;
+  coordinates: number[];
+  displayString: string;
+};
+
+type FormData = {
+  _id: string,
+  username: string;
+  email: string;
+  displayName: string;
+  description: string;
+  address: string;
+  location: Location;
+  capacity: number | string;
+  openingHours: {
+    [key: string]: {
+      isOpen: boolean;
+      open: string;
+      close: string;
+    };
+  };
+  features: string[];
+  genres: string[];
+  minAge: number | string;
+  dressCode: string;
+  contactInfo: ContactInfo;
+  socialMediaLinks: SocialMediaLinks;
+  images: FileList | null;
+  password: string;
+};
+
+interface LocationSuggestion {
+  display_name: string;
+  place_id: string;
+  lon: string;
+  lat: string;
+}
+
+const LocationInput = ({ 
+  formData, 
+  setFormData 
+}: { 
+  formData: FormData; 
+  setFormData: React.Dispatch<React.SetStateAction<FormData>>; 
+}) => {
   const [inputValue, setInputValue] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
@@ -24,7 +85,7 @@ const LocationInput = ({ formData, setFormData }) => {
   }, [formData.location?.displayString]);
 
   const debouncedFetch = useRef(
-    debounce(async (searchText) => {
+    debounce(async (searchText: string) => {
       if (!searchText) {
         setSuggestions([]);
         return;
@@ -44,13 +105,13 @@ const LocationInput = ({ formData, setFormData }) => {
     }, 300)
   ).current;
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
     debouncedFetch(value);
   };
 
-  const handleSuggestionClick = (suggestion) => {
+  const handleSuggestionClick = (suggestion: LocationSuggestion) => {
     setInputValue(suggestion.display_name);
     setSuggestions([]);
     
@@ -64,7 +125,7 @@ const LocationInput = ({ formData, setFormData }) => {
     }));
   };
 
-  const formatAddress = (display_name) => {
+  const formatAddress = (display_name: string) => {
     const parts = display_name.split(', ');
     return {
       street: parts[0],

@@ -2,13 +2,31 @@ import React from 'react';
 import { Box, useColorModeValue } from '@chakra-ui/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const SalesChart = ({ data }) => {
+interface Reservation {
+  createdAt: string;
+  minPrice: number;
+}
+
+interface SalesChartProps {
+  data: Reservation[];
+}
+
+// Update the component definition with proper typing
+const SalesChart = ({ data }: SalesChartProps) => {
   const lineColor = useColorModeValue('teal.500', 'teal.300');
   const gridColor = useColorModeValue('gray.200', 'gray.700');
 
   // Process the reservation data for the chart
   const processData = () => {
-    const monthlyData = data.reduce((acc, reservation) => {
+    interface MonthlyData {
+      [key: string]: {
+        name: string;
+        reservations: number;
+        revenue: number;
+      };
+    }
+
+    const monthlyData = data.reduce((acc: MonthlyData, reservation: Reservation) => {
       const date = new Date(reservation.createdAt);
       const month = date.toLocaleString('default', { month: 'short' });
       

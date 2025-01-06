@@ -13,7 +13,52 @@ import ResponsiveMasonryGrid from "../../ui/responsiveMasonryGrid";
 import { fetchLists } from "../../lib/backendAPI";
 import PaginatedBarCards from "../../ui/paginatedBarCards";
 
-const categories = [
+interface Category {
+  id: string;
+  name: string;
+  icon: React.ComponentType;
+  description: string;
+  gradient: string;
+  pattern: string;
+}
+
+interface Club {
+  score_data?: {
+    [key: string]: number;
+  };
+  _id: string;
+  displayName: string;
+  images: string[];
+  rating: number;
+  reviews: string[];
+  capacity: number;
+  minAge: number;
+  dressCode: string;
+  genres: string[];
+  tableLayout: any[];
+  longDescription: string;
+  description: string;
+  features: string[];
+  openingHours: any;
+  contactInfo: {
+    phone: string;
+    email: string;
+  };
+  socialMediaLinks: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+  address: string;
+  // Add other club properties as needed
+}
+
+// Explicitly define PaginatedBarCards props
+interface PaginatedBarCardsProps {
+  results: Club[];
+}
+
+const categories: Category[] = [
   {
     id: "trending",
     name: "Trending Now",
@@ -65,11 +110,11 @@ const categories = [
 ];
 
 export default function ExplorePage() {
-  const [selectedCategory, setSelectedCategory] = useState("trending");
-  const [clubs, setClubs] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("trending");
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [hoveredCard, setHoveredCard] = useState(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const headerRef = useRef(null);
   const { scrollY } = useScroll();
@@ -96,7 +141,7 @@ export default function ExplorePage() {
       try {
         const list = await fetchLists(selectedCategory);
         if (list && Array.isArray(list)) {
-          const sortedClubs = list.sort((a, b) => {
+          const sortedClubs = list.sort((a: Club, b: Club) => {
             const scoreA = a.score_data?.[selectedCategory] || 0;
             const scoreB = b.score_data?.[selectedCategory] || 0;
             return scoreB - scoreA;
@@ -116,6 +161,62 @@ export default function ExplorePage() {
 
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
 
+  // Fallback values in case selectedCategoryData is undefined
+  const defaultGradient = "from-gray-500 to-gray-700";
+  const defaultPattern = "radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.15), transparent 50%)";
+
+  const gradient = selectedCategoryData?.gradient || defaultGradient;
+  const pattern = selectedCategoryData?.pattern || defaultPattern;
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="relative overflow-hidden rounded-xl h-96"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+              <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent" />
+            </motion.div>
+          ))}
+        </motion.div>
+      );
+    }
+
+    if (clubs.length > 0) {
+      return <PaginatedBarCards results={clubs} />;
+    }
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="text-center py-16"
+      >
+        <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
+          <FaCompass className="w-8 h-8 text-gray-400 animate-pulse" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          No venues found
+        </h3>
+        <p className="text-gray-600 dark:text-gray-300">
+          Try adjusting your search or exploring different categories
+        </p>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 pt-5">
       {/* Sophisticated progress bar with glow effect */}
@@ -124,12 +225,12 @@ export default function ExplorePage() {
           className="h-full relative"
           style={{ 
             width: `${scrollProgress}%`,
-            background: `linear-gradient(to right, ${selectedCategoryData.gradient.split(' ')[1]}, ${selectedCategoryData.gradient.split(' ')[3]})` 
+            background: `linear-gradient(to right, ${gradient.split(' ')[1]}, ${gradient.split(' ')[3]})` 
           }}
         >
           <div className="absolute top-0 right-0 w-4 h-full blur-sm" 
             style={{ 
-              background: `linear-gradient(to right, ${selectedCategoryData.gradient.split(' ')[1]}, ${selectedCategoryData.gradient.split(' ')[3]})` 
+              background: `linear-gradient(to right, ${gradient.split(' ')[1]}, ${gradient.split(' ')[3]})` 
             }} 
           />
         </motion.div>
@@ -142,7 +243,7 @@ export default function ExplorePage() {
           style={{ opacity: headerOpacity, scale: headerScale }}
           className="relative mb-16"
         >
-          <div className="absolute inset-0 rounded-2xl" style={{ background: selectedCategoryData.pattern }} />
+          <div className="absolute inset-0 rounded-2xl" style={{ background: pattern }} />
           <div className="relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -155,12 +256,12 @@ export default function ExplorePage() {
                   Discover Your
                 </span>
                 <br />
-                <span className={`bg-gradient-to-r ${selectedCategoryData.gradient} bg-clip-text text-transparent`}>
+                <span className={`bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
                   Perfect Venue
                 </span>
               </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
-                Explore Athens' finest nightlife spots, from trendy bars to exclusive clubs
+                Explore Athens&apos; finest nightlife spots, from trendy bars to exclusive clubs
               </p>
             </motion.div>
 
@@ -196,7 +297,9 @@ export default function ExplorePage() {
               >
                 <div className="absolute inset-0 opacity-20" style={{ background: category.pattern }} />
                 <div className="relative z-10 flex flex-col items-center space-y-2">
-                  <category.icon className="w-6 h-6" />
+                  <div className="w-6 h-6">
+                    <category.icon/>
+                  </div>
                   <span className="text-sm font-medium">{category.name}</span>
                 </div>
               </motion.button>
@@ -207,7 +310,7 @@ export default function ExplorePage() {
         {/* Category Description with Dynamic Background */}
         <motion.div 
           className="relative mb-16 p-8 rounded-2xl overflow-hidden"
-          style={{ background: selectedCategoryData.pattern }}
+          style={{ background: pattern }}
         >
           <motion.div
             key={selectedCategory}
@@ -218,58 +321,19 @@ export default function ExplorePage() {
             className="relative z-10 text-center"
           >
             <h2 className="text-2xl font-bold mb-2">
-              <span className={`bg-gradient-to-r ${selectedCategoryData.gradient} bg-clip-text text-transparent`}>
-                {selectedCategoryData.name}
+              <span className={`bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+                {selectedCategoryData?.name || "Explore"}
               </span>
             </h2>
             <p className="text-gray-600 dark:text-gray-300">
-              {selectedCategoryData.description}
+              {selectedCategoryData?.description || "Discover great venues"}
             </p>
           </motion.div>
         </motion.div>
 
         {/* Venues Grid with Enhanced Loading State */}
         <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="relative overflow-hidden rounded-xl h-96"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
-                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent" />
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : clubs.length > 0 ? (
-            <PaginatedBarCards results={clubs} />
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="text-center py-16"
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                <FaCompass className="w-8 h-8 text-gray-400 animate-pulse" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No venues found
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Try adjusting your search or exploring different categories
-              </p>
-            </motion.div>
-          )}
+          {renderContent()}
         </AnimatePresence>
       </div>
     </div>

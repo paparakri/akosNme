@@ -1,14 +1,48 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, ReactNode } from 'react';
 import { 
   Bell, 
   Lock, 
   Sun, 
   User, 
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  LucideIcon
 } from 'lucide-react';
 
-const SettingSection = ({ title, icon: Icon, children }) => {
+interface SettingSectionProps {
+  title: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}
+
+interface SwitchProps {
+  isChecked: boolean;
+  onChange: (value: boolean) => void;
+}
+
+interface Settings {
+  notifications: {
+    newReservations: boolean;
+    cancellations: boolean;
+    reviews: boolean;
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+  };
+  security: {
+    twoFactorAuth: boolean;
+    publicProfile: boolean;
+    showRevenue: boolean;
+    shareAnalytics: boolean;
+  };
+  theme: {
+    colorMode: 'light' | 'dark' | 'system';
+    fontSize: 'small' | 'medium' | 'large';
+    animations: boolean;
+    highContrast: boolean;
+  };
+}
+
+const SettingSection = ({ title, icon: Icon, children }: SettingSectionProps) => {
   return (
     <div className="w-full overflow-hidden rounded-2xl bg-gray-900/50 p-6 backdrop-blur-lg">
       <div className="mb-6 flex items-center space-x-2">
@@ -20,7 +54,7 @@ const SettingSection = ({ title, icon: Icon, children }) => {
   );
 };
 
-const Switch = ({ isChecked, onChange }) => {
+const Switch = ({ isChecked, onChange }: SwitchProps) => {
   return (
     <button
       onClick={() => onChange(!isChecked)}
@@ -38,7 +72,7 @@ const Switch = ({ isChecked, onChange }) => {
 const Settings = () => {
   const [isOperational, setIsOperational] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<Settings>({
     notifications: {
       newReservations: true,
       cancellations: true,
@@ -60,7 +94,11 @@ const Settings = () => {
     },
   });
 
-  const handleSettingChange = (category, setting, value) => {
+  const handleSettingChange = <T extends keyof Settings>(
+    category: T,
+    setting: keyof Settings[T],
+    value: Settings[T][keyof Settings[T]]
+  ) => {
     setSettings(prev => ({
       ...prev,
       [category]: {
@@ -85,7 +123,7 @@ const Settings = () => {
       <div>
         <h1 className="text-2xl font-bold text-purple-400">Settings</h1>
         <p className="mt-1 text-sm text-gray-400">
-          Manage your club's preferences and account settings
+          Manage your club&apos;s preferences and account settings
         </p>
       </div>
 
@@ -124,7 +162,7 @@ const Settings = () => {
                 </label>
                 <Switch
                   isChecked={value}
-                  onChange={(newValue) => handleSettingChange('notifications', key, newValue)}
+                  onChange={(newValue: boolean) => handleSettingChange('notifications', key as keyof Settings['notifications'], newValue)}
                 />
               </div>
             ))}
@@ -141,7 +179,7 @@ const Settings = () => {
                 </label>
                 <Switch
                   isChecked={value}
-                  onChange={(newValue) => handleSettingChange('security', key, newValue)}
+                  onChange={(newValue: boolean) => handleSettingChange('security', key as keyof Settings['security'], newValue)}
                 />
               </div>
             ))}
@@ -155,7 +193,7 @@ const Settings = () => {
               <label className="text-sm font-medium text-gray-300">Color Mode</label>
               <select
                 value={settings.theme.colorMode}
-                onChange={(e) => handleSettingChange('theme', 'colorMode', e.target.value)}
+                onChange={(e) => handleSettingChange('theme', 'colorMode', e.target.value as 'light' | 'dark' | 'system')}
                 className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="light">Light</option>
@@ -168,7 +206,7 @@ const Settings = () => {
               <label className="text-sm font-medium text-gray-300">Font Size</label>
               <select
                 value={settings.theme.fontSize}
-                onChange={(e) => handleSettingChange('theme', 'fontSize', e.target.value)}
+                onChange={(e) => handleSettingChange('theme', 'fontSize', e.target.value as 'small' | 'medium' | 'large')}
                 className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="small">Small</option>
@@ -181,7 +219,7 @@ const Settings = () => {
               <label className="text-sm font-medium text-gray-300">Enable Animations</label>
               <Switch
                 isChecked={settings.theme.animations}
-                onChange={(newValue) => handleSettingChange('theme', 'animations', newValue)}
+                onChange={(newValue: boolean) => handleSettingChange('theme', 'animations', newValue)}
               />
             </div>
 
@@ -189,7 +227,7 @@ const Settings = () => {
               <label className="text-sm font-medium text-gray-300">High Contrast</label>
               <Switch
                 isChecked={settings.theme.highContrast}
-                onChange={(newValue) => handleSettingChange('theme', 'highContrast', newValue)}
+                onChange={(newValue: boolean) => handleSettingChange('theme', 'highContrast', newValue)}
               />
             </div>
           </div>
@@ -237,7 +275,7 @@ const Settings = () => {
               </div>
               <p className="mt-4 text-sm text-gray-300">
                 Are you sure? This will {isOperational ? 'prevent' : 'allow'} new reservations 
-                and affect your club's visibility.
+                and affect your club&apos;s visibility.
               </p>
               <div className="mt-6 flex justify-end space-x-3">
                 <button

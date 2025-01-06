@@ -41,19 +41,36 @@ const addReservation = async (req, res) => {
         }
 
         // Parse date and time
-        const [year, month, day] = date.split('-').map((x, i) => (i === 0 ? parseInt(x) : parseInt(x).toString().padStart(2, '0')));
-        const [startHour, startMinute] = startTime.split(':').map(x => parseInt(x).toString().padStart(2, '0'));
+        const [day, month, year] = date.split('-').map(x => parseInt(x));
+        const [startHour, startMinute] = startTime.split(':').map(x => parseInt(x));
 
-        console.log(`Parsed date: ${year}-${month}-${day}`);
-        console.log(`Parsed start time: ${startHour}:${startMinute}`);
+        const paddedDay = day.toString().padStart(2, '0');
+        const paddedMonth = month.toString().padStart(2, '0');
+        const paddedHour = startHour.toString().padStart(2, '0');
+        const paddedMinute = startMinute.toString().padStart(2, '0');
 
-        const reservationDate = `${day}-${month}-${year}`;
-        const reservationStartTime = new Date(`${year}-${month}-${day}T${startHour}:${startMinute}:00`);
+        const reservationDate = `${paddedDay}-${paddedMonth}-${year}`;
+        const reservationStartTime = new Date(`${year}-${paddedMonth}-${paddedDay}T${paddedHour}:${paddedMinute}:00`);
+        console.log(`${year}-${month}-${day}T${startHour}:${startMinute}:00`);
+
+        console.log("Reservation data received: ", { club, event, tableNumber, date, startTime, numOfGuests, specialRequests, minPrice });
+        console.log("Reservation data formatted: ", {
+            user: new mongoose.Types.ObjectId(userId),
+            club: new mongoose.Types.ObjectId(club),
+            event: event && event !== '' ? new mongoose.Types.ObjectId(event) : undefined,
+            table: tableNumber || undefined,
+            date: reservationDate,
+            startTime: reservationStartTime,
+            numOfGuests: Number(numOfGuests),
+            status: 'pending',
+            specialRequests: specialRequests || undefined,
+            minPrice: Number(minPrice)
+        })
 
         // Validate parsed dates
-        if ( isNaN(reservationStartTime.getTime()) ) {
-            return res.status(400).json({ message: "Invalid date or time format." });
-        }
+        //if ( isNaN(reservationStartTime.getTime()) ) {
+        //    return res.status(400).json({ message: "Invalid date or time format." });
+        //}
 
         const newReservation = await Reservation.create({
             user: new mongoose.Types.ObjectId(userId),
@@ -202,4 +219,19 @@ const getClubReservations = async (req, res) => {
     }
 }
 
-module.exports = { addReservation, removeReservation, getReservations, updateReservation, getReservationById, getClubReservations };
+const getClubReservationsByDate = async (req, res) => {
+    try {
+        const clubId = req.params.user;
+        const date = req.params.date;
+        const club = await ClubUser.findById(clubId);
+        if (!club) {
+            return res.status(404).json({ message: "Club not found." });
+        }
+        const reservations = await Reservation.find({ club: clubId, date: date });
+        res.status(200).json(reservations);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+}
+
+module.exports = { addReservation, removeReservation, getReservations, updateReservation, getReservationById, getClubReservations, getClubReservationsByDate };

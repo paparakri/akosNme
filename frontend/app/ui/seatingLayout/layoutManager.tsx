@@ -36,7 +36,7 @@ const LayoutManager: React.FC<{ id: string; onSave?: (layout: any) => void }> = 
   }, [viewport.scale, setScale]);
 
   return (
-    <div className="relative w-full h-[calc(100vh-100px)] bg-gradient-to-br from-gray-900 to-black overflow-hidden">
+    <div className="relative w-full h-[calc(100vh-100px)] bg-gradient-to-br from-gray-900 to-black overflow-hidden mt-14">
       <div className="absolute inset-0 pointer-events-none">
         {/* Background patterns/effects */}
         <div className="absolute inset-0 bg-grid-white/5 opacity-10" />
@@ -82,8 +82,8 @@ const LayoutManager: React.FC<{ id: string; onSave?: (layout: any) => void }> = 
                 key={element.id}
                 element={element}
                 isSelected={selectedIds.includes(element.id)}
-                onSelect={() => {
-                  const isShiftPressed = window.event?.shiftKey;
+                onSelect={(e) => {
+                  const isShiftPressed = e.evt.shiftKey;
                   if (isShiftPressed) {
                     setSelectedIds([...selectedIds, element.id]);
                   } else {

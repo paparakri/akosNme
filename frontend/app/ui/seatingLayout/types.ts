@@ -28,7 +28,7 @@ export interface Point {
     };
   }
   
-  export type ElementType = 'table' | 'booth' | 'bar' | 'stage' | 'vipArea' | 'danceFloor' | 'entrance' | 'exit' | 'service' | 'custom';
+  export type ElementType = 'table' | 'chair' | 'wall' | 'stage' | 'bar' | 'entrance';
   
   export interface LayoutHistory {
     past: LayoutElement[][];
@@ -82,5 +82,7 @@ export interface Point {
     style: {
       fill: string;
       stroke: string;
+      opacity?: number;
     };
+    label: string;
   }

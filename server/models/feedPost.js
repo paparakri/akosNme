@@ -8,12 +8,12 @@ const FeedPostSchema = new mongoose.Schema({
     required: true
   },
   actor: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
   club: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Club',
     required: true
   },
@@ -22,22 +22,22 @@ const FeedPostSchema = new mongoose.Schema({
     default: Date.now
   },
   metadata: {
-    eventId: { type: Schema.Types.ObjectId, ref: 'Event' },
+    eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
     eventName: String,
-    eventDate: Date,
+    eventDate: String,
     eventDescription: String,
     
-    reservationId: { type: Schema.Types.ObjectId, ref: 'Reservation' },
-    reservationDate: Date,
+    reservationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Reservation' },
+    reservationDate: String,
     guestCount: Number,
     tableNumber: String,
     
-    reviewId: { type: Schema.Types.ObjectId, ref: 'Review' },
+    reviewId: { type: mongoose.Schema.Types.ObjectId, ref: 'Review' },
     rating: Number,
     reviewText: String
   },
   groupedPosts: [{
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'FeedPost'
   }],
   visibility: {
@@ -46,7 +46,7 @@ const FeedPostSchema = new mongoose.Schema({
       default: true
     },
     allowedViewers: [{
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }]
   }
@@ -60,6 +60,6 @@ FeedPostSchema.index({ club: 1, createdAt: -1 });
 FeedPostSchema.index({ postType: 1, createdAt: -1 });
 
 // Create the model
-const FeedPost = mongoose.model<IFeedPost>('FeedPost', FeedPostSchema);
+const FeedPost = mongoose.model('FeedPost', FeedPostSchema);
 
-export default FeedPost;
+module.exports = FeedPost;

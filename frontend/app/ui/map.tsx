@@ -1,8 +1,43 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { LatLngExpression, LatLngTuple, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import type { LeafletEvent } from 'leaflet';
+
+// Add interfaces for our custom types
+interface MarkerPopup {
+  title: string;
+  rating?: number;
+  reviewCount?: number;
+  address?: string;
+}
+
+interface CustomMarkerProps {
+  position: LatLngTuple;
+  popup: MarkerPopup;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+interface MapMarker {
+  id: string | number;
+  position: LatLngTuple;
+  title: string;
+  rating?: number;
+  reviewCount?: number;
+  address?: string;
+}
+
+interface MapProps {
+  center?: LatLngTuple;
+  zoom?: number;
+  markers: MapMarker[];
+  selectedMarkerId?: string | number | null;
+  onMarkerClick?: (id: string | number) => void;
+  className?: string;
+}
 
 // Fix for default markers in Next.js
 const DefaultIcon = L.icon({
@@ -18,9 +53,9 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom marker with hover effect and club details
-const CustomMarker = ({ position, popup, isActive, onClick }) => {
+const CustomMarker = ({ position, popup, isActive, onClick }: CustomMarkerProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const markerRef = useRef(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     if (!markerRef.current) return;
@@ -71,7 +106,7 @@ const CustomMarker = ({ position, popup, isActive, onClick }) => {
 };
 
 // Component to handle map center updates
-const MapUpdater = ({ center, zoom }) => {
+const MapUpdater = ({ center, zoom }: { center: LatLngTuple; zoom: number }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -83,19 +118,30 @@ const MapUpdater = ({ center, zoom }) => {
 
 // Main Map component
 const Map = ({
-  center = [37.97914, 23.72754], // Default to Athens
+  center = [37.97914, 23.72754] as LatLngTuple,
   zoom = 13,
   markers = [],
   selectedMarkerId = null,
   onMarkerClick,
   className = ''
-}) => {
-  const [map, setMap] = useState(null);
-  const [activeMarkerId, setActiveMarkerId] = useState(selectedMarkerId);
+}: MapProps) => {
+  const [map, setMap] = useState<L.Map | null>(null);
+  const [activeMarkerId, setActiveMarkerId] = useState<string | number | null>(selectedMarkerId);
 
   useEffect(() => {
     setActiveMarkerId(selectedMarkerId);
   }, [selectedMarkerId]);
+
+  // Update cluster icon creation with proper typing
+  const createClusterIcon = (cluster: any): DivIcon => {
+    return L.divIcon({
+      html: `<div class="bg-orange-500 rounded-full w-8 h-8 flex items-center justify-center text-white font-bold text-sm">
+        ${cluster.getChildCount()}
+      </div>`,
+      className: 'custom-marker-cluster',
+      iconSize: L.point(40, 40)
+    });
+  };
 
   return (
     <div className={`relative h-full w-full overflow-hidden rounded-lg ${className}`}>
@@ -103,7 +149,9 @@ const Map = ({
         center={center}
         zoom={zoom}
         className="h-full w-full"
-        whenCreated={setMap}
+        whenReady={() => {
+          // Access map instance through a ref if needed
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -113,15 +161,7 @@ const Map = ({
         
         <MarkerClusterGroup
           chunkedLoading
-          iconCreateFunction={(cluster) => {
-            return L.divIcon({
-              html: `<div class="bg-orange-500 rounded-full w-8 h-8 flex items-center justify-center text-white font-bold text-sm">
-                ${cluster.getChildCount()}
-              </div>`,
-              className: 'custom-marker-cluster',
-              iconSize: L.point(40, 40)
-            });
-          }}
+          iconCreateFunction={createClusterIcon}
         >
           {markers.map((marker) => (
             <CustomMarker

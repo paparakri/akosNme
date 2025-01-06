@@ -1,6 +1,6 @@
-const { FeedPost } = require('../models/feedPost');
-const { User } = require('../models/normalUser');
-const { Club } = require('../models/clubUser');
+const FeedPost = require('../models/feedPost');
+const User = require('../models/normalUser');
+const Club = require('../models/clubUser');
 
 class FeedService {
   // Create a new feed post for an event
@@ -45,6 +45,16 @@ class FeedService {
     tableNumber = null
   ) {
     try {
+      console.log(`Trying to create reservation post with info: userId=${userId}, clubId=${clubId}, reservationId=${reservationId}, date=${reservationDate}, guests=${guestCount}, table=${tableNumber}`);
+      
+      // Convert date string to Date object
+      console.log("!!!!!!!!!!Reservation date: ", reservationDate)
+      const parsedDate = new Date(reservationDate.split('-').reverse().join('/'));
+      console.log("!!!!!!!!!!Parsed date: ", parsedDate);
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error('Invalid date format');
+      }
+
       const [user, club] = await Promise.all([
         User.findById(userId),
         Club.findById(clubId)
@@ -58,7 +68,7 @@ class FeedService {
         club: club._id,
         metadata: {
           reservationId,
-          reservationDate,
+          reservationDate: parsedDate, // Use the parsed date
           guestCount,
           tableNumber
         }
@@ -189,4 +199,4 @@ class FeedService {
   }
 }
 
-export default new FeedService();
+module.exports = new FeedService();

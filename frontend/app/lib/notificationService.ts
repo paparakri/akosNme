@@ -24,11 +24,17 @@ interface NotificationPayload {
   };
 }
 
+interface Reservation {
+  numOfGuests: number;
+  date: string;
+  time: string;
+}
+
 interface BatchedClubNotification {
   clubId: string;
   notifications: {
     type: 'new_reservation' | 'cancellation';
-    reservation: any;
+    reservation: Reservation;
     timestamp: Date;
   }[];
 }
@@ -65,14 +71,17 @@ class NotificationService {
   }
 
   private async sendBatchedClubNotifications() {
-    for (const [clubId, batchData] of this.batchedClubNotifications) {
+    // Convert Map entries to array for iteration
+    const entries = Array.from(this.batchedClubNotifications.entries());
+    
+    for (const [clubId, batchData] of entries) {
       try {
         const notifications = batchData.notifications;
         if (notifications.length === 0) continue;
 
         // Group notifications by type
-        const newReservations = notifications.filter(n => n.type === 'new_reservation');
-        const cancellations = notifications.filter(n => n.type === 'cancellation');
+        const newReservations = notifications.filter((n): n is typeof n => n.type === 'new_reservation');
+        const cancellations = notifications.filter((n): n is typeof n => n.type === 'cancellation');
 
         // Compose email content
         const emailContent = this.composeBatchEmailContent(newReservations, cancellations);
@@ -92,7 +101,7 @@ class NotificationService {
     }
   }
 
-  private composeBatchEmailContent(newReservations: any[], cancellations: any[]): string {
+  private composeBatchEmailContent(newReservations: { reservation: Reservation }[], cancellations: { reservation: Reservation }[]): string {
     let content = 'Daily Reservation Summary\n\n';
 
     if (newReservations.length > 0) {
@@ -113,20 +122,19 @@ class NotificationService {
     return content;
   }
 
-  public async addClubNotification(clubId: string, type: 'new_reservation' | 'cancellation', reservation: any) {
-    if (!this.batchedClubNotifications.has(clubId)) {
-      this.batchedClubNotifications.set(clubId, {
-        clubId,
-        notifications: []
-      });
-    }
+  public async addClubNotification(clubId: string, type: 'new_reservation' | 'cancellation', reservation: Reservation) {
+    const batchData = this.batchedClubNotifications.get(clubId) || {
+      clubId,
+      notifications: []
+    };
 
-    const batchData = this.batchedClubNotifications.get(clubId);
     batchData.notifications.push({
       type,
       reservation,
       timestamp: new Date()
     });
+
+    this.batchedClubNotifications.set(clubId, batchData);
   }
 
   public async sendUserNotification(payload: NotificationPayload, preferences: NotificationPreferences) {

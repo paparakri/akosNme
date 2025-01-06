@@ -3,11 +3,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { elementTemplates } from './elementTemplates';
 import { useLayoutStore } from './layoutStore';
+import { ElementType } from './types';
 
 export const ElementSidebar = () => {
   const addElement = useLayoutStore(state => state.addElement);
 
-  const handleAddElement = (type: string) => {
+  const handleAddElement = (type: ElementType) => {
     // Add element to center of viewport initially
     console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Adding element:', type);
     addElement(type, {
@@ -25,7 +26,7 @@ export const ElementSidebar = () => {
             key={type}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => handleAddElement(type)}
+            onClick={() => handleAddElement(type as ElementType)} // Cast type to ElementType
             className="w-full flex items-center p-3 rounded-xl bg-white/5 hover:bg-white/10 
                      border border-white/10 transition-all group"
           >

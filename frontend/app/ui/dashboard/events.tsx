@@ -11,16 +11,32 @@ import { deleteEvent, getClubEvents } from '@/app/lib/backendAPI';
 import { getCurrentUser } from '@/app/lib/userStatus';
 import AddEvent from './addEvent';
 
+interface Event {
+  _id: string;
+  name: string;
+  description: string;
+  date: string;
+  startTime: string;
+  images?: string[];
+  availableTickets: number;
+  price: string;
+}
+
+interface User {
+  _id: string;
+  // add other user properties as needed
+}
+
 const MyEvents = () => {
   const router = useRouter();
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -46,6 +62,7 @@ const MyEvents = () => {
     try {
       setIsLoading(true);
       setError(null);
+      if (!currentUser?._id) return;
       const response = await getClubEvents(currentUser._id);
       setEvents(response);
     } catch (err) {
@@ -61,7 +78,7 @@ const MyEvents = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleDelete = async (eventId) => {
+  const handleDelete = async (eventId: string) => {
     try {
       setError(null);
       if (!currentUser?._id) {
@@ -115,7 +132,11 @@ const MyEvents = () => {
   }
 
   if(creatingEvent) {
-    return <AddEvent setCreatingEvent={handleEventCreated} />;
+    return (
+      <div className="mt-20">
+        <AddEvent setCreatingEvent={handleEventCreated} />
+      </div>
+    );
   }
 
   return (
@@ -253,12 +274,12 @@ const MyEvents = () => {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => router.push(`/events/edit/${event._id}`)}
+                          onClick={() => router.push(`/dashboard/events/${event._id}`)}
                           className="flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-lg
                                    hover:bg-white/20 transition-colors duration-300"
                         >
                           <Edit className="w-4 h-4 mr-2" />
-                          Edit
+                          Manage
                         </motion.button>
                         
                         <motion.button

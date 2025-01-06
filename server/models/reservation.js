@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const feedService = require('../controllers/feed.js');
+
 
 const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
@@ -29,7 +31,7 @@ const ReservationSchema = new mongoose.Schema({
         required: true
     },
     startTime: {
-        type: Date,
+        type: String,
         required: true
     },
     numOfGuests: {
@@ -51,16 +53,14 @@ const ReservationSchema = new mongoose.Schema({
 ReservationSchema.post('save', async function(doc) {
   try {
     // Only create feed post for new reservations
-    if (this.isNew) {
-      await feedService.createReservationPost(
+    await feedService.createReservationPost(
         doc.user,
         doc.club,
         doc._id,
         doc.date,
         doc.numOfGuests,
         doc.tableNumber
-      );
-    }
+    );
   } catch (error) {
     console.error('Error creating feed post for reservation:', error);
     // Don't throw error to prevent blocking reservation creation

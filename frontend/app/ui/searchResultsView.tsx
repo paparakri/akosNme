@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { MapIcon, LayoutGrid, ArrowUpDown } from 'lucide-react';
+import { MapIcon, LayoutGrid, ArrowUpDown, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import BarCard from '../ui/barCard';
 import { Menu } from '@headlessui/react';
+import { LatLngTuple } from 'leaflet';
 
 // Dynamically import map component to prevent SSR issues
 const Map = dynamic(() => import('../ui/map'), { 
@@ -28,7 +29,18 @@ const MOCK_RESULTS = [{
   capacity: 300,
   minAge: 21,
   genres: ['House', 'Techno'],
-  images: ['/club1.jpg']
+  images: ['/club1.jpg'],
+  features: ['VIP Area', 'Smoking Area', 'Dance Floor'],
+  dressCode: 'Smart Casual',
+  openingHours: {
+    monday: { isOpen: true, open: '22:00', close: '04:00' },
+    tuesday: { isOpen: true, open: '22:00', close: '04:00' },
+    wednesday: { isOpen: true, open: '22:00', close: '04:00' },
+    thursday: { isOpen: true, open: '22:00', close: '04:00' },
+    friday: { isOpen: true, open: '22:00', close: '05:00' },
+    saturday: { isOpen: true, open: '22:00', close: '05:00' },
+    sunday: { isOpen: true, open: '22:00', close: '04:00' }
+  }
 }];
 
 const SORT_OPTIONS = [
@@ -39,7 +51,74 @@ const SORT_OPTIONS = [
   { label: 'Price: Low to High', value: 'price-asc' }
 ];
 
-const ViewToggle = ({ view, onViewChange }) => (
+// Add interfaces at the top of the file
+interface Club {
+  _id: string;
+  username: string;
+  displayName: string;
+  description: string;
+  formattedPrice: number;
+  reviews: any[];
+  rating: number;
+  location: {
+    coordinates: number[];
+  };
+  address: string;
+  capacity: number;
+  minAge: number;
+  genres: string[];
+  images: string[];
+  features: string[];
+  dressCode: string;
+  openingHours: {
+    [key: string]: {
+      isOpen: boolean;
+      open: string;
+      close: string;
+    };
+  };
+}
+
+interface ViewToggleProps {
+  view: 'grid' | 'map';
+  onViewChange: (view: 'grid' | 'map') => void;
+}
+
+interface SortDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+interface ResultsInfoProps {
+  total: number;
+  query?: string;
+  location?: string;
+}
+
+interface MapViewProps {
+  results: Club[];
+  onMarkerClick: (club: Club) => void;
+}
+
+interface GridViewProps {
+  results: Club[];
+}
+
+interface MapMarker {
+  id: string;
+  position: number[];
+  popup: string;
+  onClick: () => void;
+}
+
+interface MapProps {
+  center: number[];
+  zoom: number;
+  markers: MapMarker[];
+  onMarkerClick: (club: Club) => void;
+}
+
+const ViewToggle: React.FC<ViewToggleProps> = ({ view, onViewChange }) => (
   <div className="inline-flex rounded-lg bg-gray-800 p-1">
     <button
       onClick={() => onViewChange('grid')}
@@ -64,7 +143,7 @@ const ViewToggle = ({ view, onViewChange }) => (
   </div>
 );
 
-const SortDropdown = ({ value, onChange }) => (
+const SortDropdown: React.FC<SortDropdownProps> = ({ value, onChange }) => (
   <Menu as="div" className="relative">
     <Menu.Button className="flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
       <ArrowUpDown className="h-4 w-4" />
@@ -89,11 +168,11 @@ const SortDropdown = ({ value, onChange }) => (
   </Menu>
 );
 
-const ResultsInfo = ({ total, query, location }) => (
+const ResultsInfo: React.FC<ResultsInfoProps> = ({ total, query, location }) => (
   <div className="rounded-lg bg-gray-900 p-4">
     <h2 className="text-lg font-semibold text-white">
       {total} {total === 1 ? 'result' : 'results'} found
-      {query && <span> for "{query}"</span>}
+      {query && <span> for &quot;{query}&quot;</span>}
       {location && <span> in {location}</span>}
     </h2>
     <p className="mt-1 text-sm text-gray-400">
@@ -102,26 +181,34 @@ const ResultsInfo = ({ total, query, location }) => (
   </div>
 );
 
-const MapView = ({ results, onMarkerClick }) => (
+const MapView: React.FC<MapViewProps> = ({ results, onMarkerClick }) => (
   <div className="relative h-[600px] w-full overflow-hidden rounded-lg">
     <Map
-      center={[23.72754, 37.97914]} // Default to Athens
+      center={[23.72754, 37.97914] as LatLngTuple}
       zoom={13}
       markers={results.map(club => ({
         id: club._id,
-        position: club.location.coordinates.reverse(),
-        popup: club.displayName,
-        onClick: () => onMarkerClick(club)
+        position: club.location.coordinates.reverse() as LatLngTuple,
+        title: club.displayName,
+        rating: club.rating,
+        reviewCount: club.reviews.length,
+        address: club.address
       }))}
+      selectedMarkerId={null}
+      onMarkerClick={(id) => {
+        const club = results.find(c => c._id === id);
+        if (club) onMarkerClick(club);
+      }}
     />
   </div>
 );
 
-const GridView = ({ results }) => (
+const GridView: React.FC<GridViewProps> = ({ results }) => (
   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
     {results.map((club) => (
       <BarCard
         key={club._id}
+        _id={club._id}
         username={club.username}
         imageUrl={club.images[0]}
         imageAlt={club.displayName}
@@ -131,6 +218,10 @@ const GridView = ({ results }) => (
         reviewCount={club.reviews.length}
         location={club.address}
         rating={club.rating}
+        features={club.features}
+        capacity={club.capacity}
+        dressCode={club.dressCode}
+        openingHours={club.openingHours}
       />
     ))}
   </div>
@@ -148,12 +239,12 @@ const NoResults = () => (
   </div>
 );
 
-const SearchResultsView = () => {
-  const [view, setView] = useState('grid');
-  const [sortBy, setSortBy] = useState('relevance');
-  const [results, setResults] = useState(MOCK_RESULTS);
-  const [selectedClub, setSelectedClub] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+const SearchResultsView: React.FC = () => {
+  const [view, setView] = useState<'grid' | 'map'>('grid');
+  const [sortBy, setSortBy] = useState<string>('relevance');
+  const [results, setResults] = useState<Club[]>(MOCK_RESULTS);
+  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Here you would fetch results based on filters
   // useEffect(() => {

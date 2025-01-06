@@ -1,5 +1,5 @@
-export function sortEventsByType(events) {
-    return events.reduce((sortedEvents, event) => {
+export function sortEventsByType(events: any[]) {
+    return events.reduce((sortedEvents: { [x: string]: any[]; featured?: any; today?: any; weekend?: any; concerts?: any; exclusive?: any; }, event: { date?: any; eventType: any; price?: any; }) => {
       const { eventType } = event;
   
       if (!sortedEvents.featured && !sortedEvents.today && !sortedEvents.weekend && !sortedEvents.concerts && !sortedEvents.exclusive) {
@@ -18,7 +18,7 @@ export function sortEventsByType(events) {
   
       // Sort the sublists according to date, from most recent to most far away in the future
       Object.keys(sortedEvents).forEach(key => {
-        sortedEvents[key].sort((a, b) => new Date(a.date) - new Date(b.date));
+        sortedEvents[key].sort((a: { date: string | number | Date; }, b: { date: string | number | Date; }) => new Date(b.date).getTime() - new Date(a.date).getTime());
       });
   
       return sortedEvents;

@@ -1,22 +1,29 @@
 "use client"
 import { useState } from "react";
 
-export const CustomCalendar = ({ selectedDate, onDateSelect, reservationDates }) => {
+interface CustomCalendarProps {
+  selectedDate: Date;
+  onDateSelect: (date: Date) => void;
+  reservationDates: string[];
+}
+
+export const CustomCalendar = ({ selectedDate, onDateSelect, reservationDates }: CustomCalendarProps) => {
     const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
+    const today = new Date();
     
     // Format date to DD/MM/YYYY to match your reservation dates format
-    const formatDate = (date) => {
+    const formatDate = (date: Date): string => {
         return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
-      };
+    };
 
     // Check if a date has reservations
-    const hasReservation = (date) => {
+    const hasReservation = (date: Date): boolean => {
         const dateString = formatDate(date);
         return reservationDates.includes(dateString);
     };
 
     // Check if two dates are the same day
-    const isSameDay = (date1, date2) => {
+    const isSameDay = (date1: Date, date2: Date): boolean => {
         return formatDate(date1) === formatDate(date2);
     };
   
@@ -45,6 +52,8 @@ export const CustomCalendar = ({ selectedDate, onDateSelect, reservationDates })
         const isSelected = isSameDay(date, selectedDate);
         const hasReservationDot = hasReservation(date);
   
+        const isToday = (date: Date): boolean => formatDate(date) === formatDate(today);
+  
         days.push(
         <td key={day} className="text-center p-0">
             <div className="aspect-square relative">
@@ -53,12 +62,13 @@ export const CustomCalendar = ({ selectedDate, onDateSelect, reservationDates })
                 className={`
                 w-full h-full flex flex-col items-center justify-center gap-1
                 ${isSelected ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-800'}
+                ${isToday(date) ? 'border-2 border-orange-300' : ''}
                 rounded-full relative
                 `}
             >
                 <span className="text-sm">{day}</span>
                 {hasReservationDot && (
-                <div className="absolute -bottom-0.5 h-1.5 w-1.5 rounded-full bg-orange-500" />
+                <div className="absolute -bottom-0 h-1.5 w-1.5 rounded-full bg-orange-500" />
                 )}
             </button>
             </div>

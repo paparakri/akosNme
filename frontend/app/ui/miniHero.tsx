@@ -36,7 +36,7 @@ const MiniHero: React.FC<MiniHeroProps> = ({ eventNumber, venueNumber, nearVenue
             >
               <h1 className="text-3xl font-bold mb-2">
                 <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                  This Weekend's Hottest Spots
+                  This Weekend&apos;s Hottest Spots
                 </span>
               </h1>
               <p className="text-gray-400 max-w-xl">

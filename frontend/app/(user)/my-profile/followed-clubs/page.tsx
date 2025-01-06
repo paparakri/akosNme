@@ -7,20 +7,33 @@ import { Search, Grid, List, UserMinus, Users } from 'lucide-react';
 import { fetchClubFollowers, switchUsername2Id, fetchNormalUser, unfollowClub, fetchClubInfo } from '@/app/lib/backendAPI';
 import { getCurrentUser } from '@/app/lib/userStatus';
 
+interface Club {
+  _id: string;
+  username: string;
+  displayName: string;
+  followers: string[];
+}
+
+interface User {
+  username: string;
+  friends: string[];
+  clubInterests: string[];
+}
+
 const FollowedClubsPage = () => {
   const router = useRouter();
-  const [followedClubs, setFollowedClubs] = useState([]);
-  const [filteredClubs, setFilteredClubs] = useState([]);
+  const [followedClubs, setFollowedClubs] = useState<Club[]>([]);
+  const [filteredClubs, setFilteredClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
-  const [userId, setUserId] = useState(null);
-  const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const calculateFriendsFollowing = (clubFollowers:any) => {
-    return user.friends.filter(friend => clubFollowers.some(clubFollower => clubFollower === friend)).length;
+  const calculateFriendsFollowing = (clubFollowers: string[]) => {
+    if (!user?.friends) return 0;
+    return user.friends.filter(friend => clubFollowers.includes(friend)).length;
   }
-
 
   useEffect(() => {
     const initializePage = async () => {
@@ -35,15 +48,15 @@ const FollowedClubsPage = () => {
         setUserId(id);
 
         const userData = await fetchNormalUser(id);
-
         setUser(userData);
 
-        const clubObjects = await Promise.all(userData.clubInterests.map(async (clubId) => {
+        const clubObjects = await Promise.all(userData.clubInterests.map(async (clubId: string) => {
           const clubData = await fetchClubInfo(clubId);
           return clubData;
         }));
 
         setFollowedClubs(clubObjects);
+        setFilteredClubs(clubObjects);
       } catch (error) {
         console.error('Error fetching followed clubs:', error);
       } finally {
@@ -61,7 +74,8 @@ const FollowedClubsPage = () => {
     setFilteredClubs(filtered);
   }, [searchQuery, followedClubs]);
 
-  const handleUnfollow = async (clubId) => {
+  const handleUnfollow = async (clubId: string) => {
+    if (!userId) return;
     try {
       await unfollowClub(userId, clubId);
       setFollowedClubs(prev => prev.filter(club => club._id !== clubId));
@@ -162,8 +176,8 @@ const FollowedClubsPage = () => {
                       <h3 className="text-xl font-semibold mb-2">{club.displayName}</h3>
                       {calculateFriendsFollowing(club.followers) !== 0 && 
                         <div className="flex items-center text-gray-400 text-sm">
-                            <Users className="w-4 h-4 mr-2" />
-                            <span>Followed by {calculateFriendsFollowing(club.followers)} friends</span>
+                          <Users className="w-4 h-4 mr-2" />
+                          <span>Followed by {calculateFriendsFollowing(club.followers)} friends</span>
                         </div>
                       }
                     </div>

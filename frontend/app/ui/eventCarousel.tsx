@@ -3,14 +3,25 @@ import { Calendar, Clock, Users, DollarSign, ChevronLeft, ChevronRight } from 'l
 import { getClubEvents } from '@/app/lib/backendAPI';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const EventCarousel = ({ clubId }) => {
-  const [events, setEvents] = useState([]);
+interface Event {
+  id: string;
+  name: string;
+  description: string;
+  date: string;
+  startTime: string;
+  images?: string[];
+  availableTickets: number;
+  price: string;
+}
+
+const EventCarousel = ({ clubId }: { clubId: string }) => {
+  const [events, setEvents] = useState<Event[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [touchPosition, setTouchPosition] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [touchPosition, setTouchPosition] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const carouselRef = useRef(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -41,14 +52,13 @@ const EventCarousel = ({ clubId }) => {
     );
   };
 
-  // Touch and mouse handlers remain the same...
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     const touchDown = e.touches[0].clientX;
     setTouchPosition(touchDown);
     setIsDragging(true);
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (touchPosition === null) return;
     const currentTouch = e.touches[0].clientX;
     const diff = touchPosition - currentTouch;
@@ -64,12 +74,12 @@ const EventCarousel = ({ clubId }) => {
     setIsDragging(false);
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     setTouchPosition(e.clientX);
     setIsDragging(true);
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || touchPosition === null) return;
     const currentPosition = e.clientX;
     const diff = touchPosition - currentPosition;
@@ -115,7 +125,7 @@ const EventCarousel = ({ clubId }) => {
       <div className="h-96 flex items-center justify-center">
         <div className="text-center p-8 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
           <h3 className="text-xl font-medium text-white mb-2">No events available</h3>
-          <p className="text-gray-400">This club hasn't posted any events yet.</p>
+          <p className="text-gray-400">This club hasn&apos;t posted any events yet.</p>
         </div>
       </div>
     );

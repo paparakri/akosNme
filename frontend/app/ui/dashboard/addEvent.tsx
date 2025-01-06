@@ -1,52 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Box,
-  Text,
-  VStack,
-  SimpleGrid,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Button,
-  NumberInput,
-  NumberInputField,
-  Select,
-  useToast,
-  InputGroup,
-  InputLeftAddon,
-  Stack,
-  Heading,
-  FormHelperText,
-  useColorModeValue
-} from '@chakra-ui/react';
-import { CalendarIcon, TimeIcon, InfoOutlineIcon } from '@chakra-ui/icons';
 import { 
-  Music, Users, Clock, DollarSign, Image as ImageIcon,
-  Calendar, AlertCircle, PartyPopper, FileText
+  FileText, Calendar, Clock, DollarSign, Users, 
+  AlertCircle, Image as ImageIcon, PartyPopper, Music 
 } from 'lucide-react';
+import { useToast } from '@chakra-ui/react';
 import { addEvent } from '@/app/lib/backendAPI';
 import { getCurrentUser } from '@/app/lib/userStatus';
-import ChakraDatePicker from '@/app/ui/datepicker';
 
 const eventTypes = [
-  { value: 'Concert', icon: Music },
-  { value: 'Festival', icon: PartyPopper },
-  { value: 'DJ Night', icon: Music },
-  { value: 'Live Performance', icon: Music },
-  { value: 'Theme Party', icon: PartyPopper },
-  { value: 'Special Event', icon: PartyPopper }
+  { value: 'Concert', label: 'Concert', icon: Music },
+  { value: 'Festival', label: 'Festival', icon: PartyPopper },
+  { value: 'DJ Night', label: 'DJ Night', icon: Music },
+  { value: 'Live Performance', label: 'Live Performance', icon: Music },
+  { value: 'Theme Party', label: 'Theme Party', icon: PartyPopper },
+  { value: 'Special Event', label: 'Special Event', icon: PartyPopper }
 ];
 
-const AddEvent = ({setCreatingEvent}: {setCreatingEvent: () => void}) => {
-  const toast = useToast();
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
+// First, let's define interfaces for our props and form data
+interface AddEventProps {
+  setCreatingEvent: () => void;
+}
 
-  const [eventData, setEventData] = useState({
-    _id: '',
+interface EventFormData {
+  name: string;
+  description: string;
+  date: string;
+  startTime: string;
+  price: string;
+  availableTickets: string;
+  eventType: string;
+  minAge: number;
+  images: FileList | null;
+}
+
+interface FormErrors {
+  name?: string;
+  description?: string;
+  date?: string;
+  startTime?: string;
+  price?: string;
+  availableTickets?: string;
+  eventType?: string;
+  minAge?: string;
+}
+
+// Update the component definition with proper types
+const AddEvent: React.FC<AddEventProps> = ({ setCreatingEvent }) => {
+  const toast = useToast();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+
+  const [eventData, setEventData] = useState<EventFormData>({
     name: '',
     description: '',
     date: '',
@@ -55,38 +62,90 @@ const AddEvent = ({setCreatingEvent}: {setCreatingEvent: () => void}) => {
     availableTickets: '',
     eventType: '',
     minAge: 21,
-    serviceProviders: [],
-    images: null as FileList | null
+    images: null
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const validateStep = (step: number): boolean => {
+    const errors: FormErrors = {};
+    let isValid = true;
+    
+    switch(step) {
+      case 1:
+        if (!eventData.name?.trim()) {
+          errors.name = 'Event name is required';
+          isValid = false;
+        }
+        if (!eventData.eventType) {
+          errors.eventType = 'Event type is required';
+          isValid = false;
+        }
+        if (!eventData.description?.trim()) {
+          errors.description = 'Description is required';
+          isValid = false;
+        }
+        break;
+      case 2:
+        if (!eventData.date) {
+          errors.date = 'Date is required';
+          isValid = false;
+        }
+        if (!eventData.startTime) {
+          errors.startTime = 'Start time is required';
+          isValid = false;
+        }
+        if (!eventData.price) {
+          errors.price = 'Price is required';
+          isValid = false;
+        }
+        if (!eventData.availableTickets) {
+          errors.availableTickets = 'Number of tickets is required';
+          isValid = false;
+        }
+        break;
+      case 3:
+        // Only validate but don't submit
+        if (!eventData.minAge || eventData.minAge < 18) {
+          errors.minAge = 'Valid minimum age is required (18+)';
+          isValid = false;
+        }
+        break;
+    }
+  
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleNext = useCallback(() => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, 3));
+    }
+  }, [currentStep, eventData]);
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEventData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
 
-  const handleNumberInputChange = (name: string, value: string) => {
-    setEventData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (formErrors[name as keyof FormErrors]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+    if (e.target.files?.length) {
       setEventData(prev => ({
         ...prev,
         images: e.target.files
       }));
-
-      // Create preview URLs
+      
       const urls = Array.from(e.target.files).map(file => URL.createObjectURL(file));
       setPreviewUrls(prev => {
-        // Revoke old URLs to prevent memory leaks
         prev.forEach(url => URL.revokeObjectURL(url));
         return urls;
       });
@@ -95,384 +154,425 @@ const AddEvent = ({setCreatingEvent}: {setCreatingEvent: () => void}) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentStep !== 3) return; // Only process submission on step 3
     
+    // Validate all steps before submitting
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+      return;
+    }
+    
+    setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      Object.keys(eventData).forEach(key => {
-        if (key === 'images' && eventData.images) {
-          Array.from(eventData.images).forEach(file => {
-            formData.append('images', file);
-          });
-        } else {
-          if (eventData[key as keyof typeof eventData] !== null) {
-            formData.append(key, eventData[key as keyof typeof eventData] as string);
-          }
-        }
-      });
-
-      const currentId = await getCurrentUser();
-      const res = await addEvent(currentId._id, eventData);
-
+      const currentUser = await getCurrentUser();
+      await addEvent(currentUser._id, eventData);
+      
       toast({
-        title: 'Success!',
-        description: 'Your event has been created successfully.',
-        status: 'success',
+        title: "Success!",
+        description: "Your event has been created successfully.",
+        status: "success",
         duration: 5000,
         isClosable: true,
-        position: 'top-right',
-        icon: <PartyPopper className="h-5 w-5" />
       });
-
+      
       setCreatingEvent();
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to create event. Please try again.',
-        status: 'error',
+        title: "Error",
+        description: "Failed to create event. Please try again.",
+        status: "error",
         duration: 5000,
         isClosable: true,
-        position: 'top-right',
       });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderFormStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <FileText className="inline-block w-4 h-4 mr-2" />
+                Event Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={eventData.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white/5 border ${
+                  formErrors.name ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors`}
+                placeholder="Enter event name"
+              />
+              {formErrors.name && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <PartyPopper className="inline-block w-4 h-4 mr-2" />
+                Event Type
+              </label>
+              <select
+                name="eventType"
+                value={eventData.eventType}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-gray-900 border ${
+                  formErrors.eventType ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors text-white [&>option]:bg-gray-900`}
+                style={{
+                  appearance: 'none',
+                  color: 'white',
+                  outline: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+                    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+                  )}")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundSize: '1rem'
+                }}
+                
+              >
+                <option value="" className="!bg-gray-900 !text-white">Select event type</option>
+                {eventTypes.map(type => (
+                  <option key={type.value} value={type.value} className="!bg-gray-900 !text-white">{type.label}</option>
+                ))}
+              </select>
+              {formErrors.eventType && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.eventType}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <FileText className="inline-block w-4 h-4 mr-2" />
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={eventData.description}
+                onChange={handleChange}
+                rows={4}
+                className={`w-full px-4 py-2 bg-white/5 border ${
+                  formErrors.description ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors`}
+                placeholder="Describe your event"
+              />
+              {formErrors.description && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
+              )}
+            </div>
+          </motion.div>
+        );
+
+      case 2:
+        return (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <Calendar className="inline-block w-4 h-4 mr-2" />
+                Date
+              </label>
+              <input
+                type="date"
+                name="date"
+                value={eventData.date}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white/5 border ${
+                  formErrors.date ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors`}
+              />
+              {formErrors.date && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.date}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <Clock className="inline-block w-4 h-4 mr-2" />
+                Start Time
+              </label>
+              <input
+                type="time"
+                name="startTime"
+                value={eventData.startTime}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-white/5 border ${
+                  formErrors.startTime ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors`}
+              />
+              {formErrors.startTime && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.startTime}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <DollarSign className="inline-block w-4 h-4 mr-2" />
+                Ticket Price
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-400">€</span>
+                <input
+                  type="number"
+                  name="price"
+                  value={eventData.price}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  className={`w-full pl-8 pr-4 py-2 bg-white/5 border ${
+                    formErrors.price ? 'border-red-500' : 'border-white/10'
+                  } rounded-lg focus:border-blue-500 transition-colors`}
+                  placeholder="0.00"
+                />
+              </div>
+              {formErrors.price && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.price}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <Users className="inline-block w-4 h-4 mr-2" />
+                Available Tickets
+              </label>
+              <input
+                type="number"
+                name="availableTickets"
+                value={eventData.availableTickets}
+                onChange={handleChange}
+                min="1"
+                className={`w-full px-4 py-2 bg-white/5 border ${
+                  formErrors.availableTickets ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors`}
+                placeholder="Enter number of tickets"
+              />
+              {formErrors.availableTickets && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.availableTickets}</p>
+              )}
+            </div>
+          </motion.div>
+        );
+
+      case 3:
+        return (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <AlertCircle className="inline-block w-4 h-4 mr-2" />
+                Minimum Age
+              </label>
+              <input
+                type="number"
+                name="minAge"
+                value={eventData.minAge}
+                onChange={handleChange}
+                min="18"
+                className={`w-full px-4 py-2 bg-white/5 border ${
+                  formErrors.minAge ? 'border-red-500' : 'border-white/10'
+                } rounded-lg focus:border-blue-500 transition-colors`}
+                placeholder="Enter minimum age requirement"
+              />
+              <p className="mt-1 text-sm text-gray-400">
+                Minimum age requirement for attendees
+              </p>
+              {formErrors.minAge && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.minAge}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                <ImageIcon className="inline-block w-4 h-4 mr-2" />
+                Event Images
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-blue-500 transition-colors"
+              />
+              <p className="mt-1 text-sm text-gray-400">
+                Upload one or more images for your event
+              </p>
+
+              {previewUrls.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 gap-4">
+                  {previewUrls.map((url, index) => (
+                    <div
+                      key={url}
+                      className="relative aspect-square rounded-lg overflow-hidden border border-white/10"
+                    >
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        );
     }
   };
 
   return (
-    <Box maxW="7xl" mx="auto" pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative"
-      >
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-3xl" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            Create New Event
+          </h2>
+          <p className="mt-2 text-gray-400">Fill in the details below to create your event</p>
+        </div>
 
-        <div className="relative bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="p-8 border-b border-white/10"
-          >
-            <Heading size="lg" className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Create New Event
-            </Heading>
-            <Text mt={2} className="text-gray-400">
-              Fill in the details below to create your event
-            </Text>
-          </motion.div>
-
-          {/* Progress indicator */}
-          <div className="px-8 pt-6">
-            <div className="relative">
-              <div className="absolute top-2 w-full h-1 bg-gray-200 rounded">
+        {/* Progress Bar */}
+        <div className="px-6 pt-6">
+          <div className="relative">
+            <div className="absolute top-1/2 h-0.5 w-full bg-gray-700 transform -translate-y-1/2">
+              <motion.div
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
+                initial={{ width: 0 }}
+                animate={{ width: `${((currentStep - 1) / 2) * 100}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+            <div className="relative flex justify-between">
+              {[1, 2, 3].map((step) => (
                 <motion.div
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded"
-                  style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-              <div className="relative flex justify-between">
-                {[1, 2, 3].map((step) => (
-                  <motion.button
-                    key={step}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      step <= currentStep
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                        : 'bg-gray-200 text-gray-400'
-                    }`}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentStep(step)}
-                  >
-                    {step}
-                  </motion.button>
-                ))}
-              </div>
+                  key={step}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center 
+                    ${step <= currentStep 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
+                      : 'bg-gray-700'}`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="text-white font-medium">{step}</span>
+                </motion.div>
+              ))}
             </div>
           </div>
-
-          <form onSubmit={handleSubmit} className="p-8">
-            <AnimatePresence mode="wait">
-              {currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                    <FormControl isRequired>
-                      <FormLabel className="text-gray-300">
-                        <FileText className="inline-block w-4 h-4 mr-2" />
-                        Event Name
-                      </FormLabel>
-                      <Input
-                        name="name"
-                        value={eventData.name}
-                        onChange={handleInputChange}
-                        placeholder="Enter event name"
-                        className="bg-white/5 border-white/10"
-                      />
-                    </FormControl>
-
-                    <FormControl isRequired>
-                      <FormLabel className="text-gray-300">
-                        <PartyPopper className="inline-block w-4 h-4 mr-2" />
-                        Event Type
-                      </FormLabel>
-                      <Select
-                        name="eventType"
-                        value={eventData.eventType}
-                        onChange={handleInputChange}
-                        placeholder="Select event type"
-                        className="bg-white/5 border-white/10"
-                      >
-                        {eventTypes.map(({ value, icon: Icon }) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </SimpleGrid>
-
-                  <FormControl isRequired>
-                    <FormLabel className="text-gray-300">
-                      <FileText className="inline-block w-4 h-4 mr-2" />
-                      Description
-                    </FormLabel>
-                    <Textarea
-                      name="description"
-                      value={eventData.description}
-                      onChange={handleInputChange}
-                      placeholder="Describe your event"
-                      rows={4}
-                      className="bg-white/5 border-white/10"
-                    />
-                  </FormControl>
-                </motion.div>
-              )}
-
-              {currentStep === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                    <FormControl isRequired>
-                      <FormLabel className="text-gray-300">
-                        <Calendar className="inline-block w-4 h-4 mr-2" />
-                        Date
-                      </FormLabel>
-                      <InputGroup>
-                        <InputLeftAddon children={<CalendarIcon />} />
-                        <ChakraDatePicker
-                          value={eventData.date}
-                          onChange={handleInputChange}
-                          isRequired={true}
-                          label="Date"
-                        />
-                      </InputGroup>
-                    </FormControl>
-
-                    <FormControl isRequired>
-                      <FormLabel className="text-gray-300">
-                        <Clock className="inline-block w-4 h-4 mr-2" />
-                        Start Time
-                      </FormLabel>
-                      <InputGroup>
-                        <InputLeftAddon children={<TimeIcon />} />
-                        <Input
-                          name="startTime"
-                          type="time"
-                          value={eventData.startTime}
-                          onChange={handleInputChange}
-                          className="bg-white/5 border-white/10"
-                        />
-                      </InputGroup>
-                    </FormControl>
-                  </SimpleGrid>
-
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                    <FormControl isRequired>
-                      <FormLabel className="text-gray-300">
-                        <DollarSign className="inline-block w-4 h-4 mr-2" />
-                        Ticket Price
-                      </FormLabel>
-                      <InputGroup>
-                        <InputLeftAddon children="$" />
-                        <NumberInput
-                          min={0}
-                          value={eventData.price}
-                          onChange={(value) => handleNumberInputChange('price', value)}
-                        >
-                          <NumberInputField
-                            name="price"
-                            placeholder="0.00"
-                            className="bg-white/5 border-white/10"
-                          />
-                        </NumberInput>
-                      </InputGroup>
-                    </FormControl>
-
-                    <FormControl isRequired>
-                      <FormLabel className="text-gray-300">
-                        <Users className="inline-block w-4 h-4 mr-2" />
-                        Available Tickets
-                      </FormLabel>
-                      <NumberInput
-                        min={1}
-                        value={eventData.availableTickets}
-                        onChange={(value) => handleNumberInputChange('availableTickets', value)}
-                      >
-                        <NumberInputField
-                          name="availableTickets"
-                          placeholder="Enter number of tickets"
-                          className="bg-white/5 border-white/10"
-                        />
-                      </NumberInput>
-                    </FormControl>
-                  </SimpleGrid>
-                </motion.div>
-              )}
-
-              {currentStep === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <FormControl isRequired>
-                    <FormLabel className="text-gray-300">
-                      <AlertCircle className="inline-block w-4 h-4 mr-2" />
-                      Minimum Age
-                    </FormLabel>
-                    <NumberInput
-                      min={18}
-                      max={99}
-                      value={eventData.minAge}
-                      onChange={(value) => handleNumberInputChange('minAge', value)}
-                    >
-                      <NumberInputField
-                        name="minAge"
-                        placeholder="Enter minimum age requirement"
-                        className="bg-white/5 border-white/10"
-                      />
-                    </NumberInput>
-                    <FormHelperText className="text-gray-400">
-                      Minimum age requirement for attendees
-                    </FormHelperText>
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel className="text-gray-300">
-                      <ImageIcon className="inline-block w-4 h-4 mr-2" />
-                      Event Images
-                    </FormLabel>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageChange}
-                      p={1}
-                      className="bg-white/5 border-white/10"
-                    />
-                    <FormHelperText className="text-gray-400">
-                      Upload one or more images for your event
-                    </FormHelperText>
-
-                    {previewUrls.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="mt-4 grid grid-cols-3 gap-4"
-                      >
-                        {previewUrls.map((url, index) => (
-                          <motion.div
-                            key={url}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="relative aspect-square rounded-lg overflow-hidden"
-                          >
-                            <img
-                              src={url}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    )}
-                  </FormControl>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Navigation and Submit Buttons */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-8 flex justify-between items-center"
-            >
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                {currentStep > 1 && (
-                  <Button
-                    onClick={() => setCurrentStep(prev => prev - 1)}
-                    variant="ghost"
-                    className="text-gray-300 hover:text-white hover:bg-white/10"
-                  >
-                    Previous
-                  </Button>
-                )}
-              </motion.div>
-
-              <Stack direction="row" spacing={4}>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={() => setCreatingEvent()}
-                    className="bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                  >
-                    Cancel
-                  </Button>
-                </motion.div>
-
-                {currentStep < totalSteps ? (
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      onClick={() => setCurrentStep(prev => prev + 1)}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                    >
-                      Continue
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      type="submit"
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                    >
-                      Create Event
-                    </Button>
-                  </motion.div>
-                )}
-              </Stack>
-            </motion.div>
-          </form>
         </div>
-      </motion.div>
-    </Box>
+
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="p-6">
+          <AnimatePresence mode="wait">
+            {renderFormStep()}
+          </AnimatePresence>
+
+          {/* Navigation Buttons */}
+          <div className="mt-8 flex justify-between">
+            <motion.button
+              type="button"
+              onClick={handlePrevious}
+              className={`px-6 py-2 rounded-lg border border-white/10 text-gray-300 
+                transition-colors hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={currentStep === 1 || isSubmitting}
+            >
+              Previous
+            </motion.button>
+
+            <div className="flex gap-4">
+              <motion.button
+                type="button"
+                onClick={() => setCreatingEvent()}
+                className="px-6 py-2 rounded-lg bg-red-500/10 text-red-400 
+                  transition-colors hover:bg-red-500/20 disabled:opacity-50 
+                  disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </motion.button>
+
+              {currentStep < 3 ? (
+                <motion.button
+                  type="button"
+                  onClick={handleNext}
+                  className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 
+                    to-purple-500 text-white transition-all hover:shadow-lg 
+                    disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={isSubmitting}
+                >
+                  Continue
+                </motion.button>
+              ) : (
+                <motion.button
+                  type="button"
+                  className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 
+                    to-purple-500 text-white transition-all hover:shadow-lg 
+                    disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={isSubmitting}
+                  onClick={handleSubmit}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <span>Creating Event...</span>
+                    </>
+                  ) : (
+                    <>
+                      <PartyPopper className="w-5 h-5" />
+                      <span>Create Event</span>
+                    </>
+                  )}
+                </motion.button>
+              )}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 

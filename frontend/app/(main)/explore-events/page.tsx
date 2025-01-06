@@ -12,38 +12,65 @@ import { fetchClubInfo, getAllEvents } from '../../lib/backendAPI';
 import { sortEventsByType } from '../../lib/eventSorting';
 import debounce from 'lodash/debounce';
 
+interface Club {
+  _id: string;
+  displayName: string;
+  [key: string]: any;
+}
+
+interface Event {
+  _id: string;
+  name: string;
+  date: string;
+  startTime: string;
+  price: number;
+  availableTickets: number;
+  images: string[];
+  club: Club;
+  description?: string;
+  [key: string]: any;
+}
+
+interface EventCategory {
+  _id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  gradient: string;
+}
+
 // Event categories configuration
-const EVENT_CATEGORIES = [
+const EVENT_CATEGORIES: EventCategory[] = [
   {
-    id: 'featured',
+    _id: 'featured',
     title: 'Featured Events',
     description: 'Handpicked events you can\'t miss',
     icon: Star,
     gradient: 'from-purple-500 to-pink-500'
   },
   {
-    id: 'today',
+    _id: 'today',
     title: 'Happening Today',
     description: 'Don\'t miss out on tonight\'s excitement',
     icon: Calendar,
     gradient: 'from-blue-500 to-cyan-500'
   },
   {
-    id: 'weekend',
+    _id: 'weekend',
     title: 'Weekend Highlights',
     description: 'Plan your weekend festivities',
     icon: PartyPopper,
     gradient: 'from-amber-500 to-red-500'
   },
   {
-    id: 'concerts',
+    _id: 'concerts',
     title: 'Live Performances',
     description: 'Experience live music and shows',
     icon: Music,
     gradient: 'from-green-500 to-teal-500'
   },
   {
-    id: 'exclusive',
+    _id: 'exclusive',
     title: 'VIP Events',
     description: 'Exclusive gatherings and premium experiences',
     icon: Award,
@@ -51,17 +78,23 @@ const EVENT_CATEGORIES = [
   }
 ];
 
-const SearchBar = ({ onSearch, onClear, isSearching }) => {
+interface SearchBarProps {
+  onSearch: (term: string) => void;
+  onClear: () => void;
+  isSearching: boolean;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, isSearching }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
   const debouncedSearch = useRef(
-    debounce((term) => {
+    debounce((term: string) => {
       onSearch(term);
     }, 300)
   ).current;
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     if (value) {
@@ -109,7 +142,11 @@ const SearchBar = ({ onSearch, onClear, isSearching }) => {
   );
 };
 
-const EventCard = ({ event }) => {
+interface EventCardProps {
+  event: Event;
+}
+
+const EventCard: React.FC<EventCardProps> = ({ event }) => {
   return (
     <motion.div
       whileHover={{ y: -8 }}
@@ -171,8 +208,16 @@ const EventCard = ({ event }) => {
   );
 };
 
-const ScrollableEventList = ({ title, description, events, icon: Icon, gradient }) => {
-  const containerRef = useRef(null);
+interface ScrollableEventListProps {
+  title: string;
+  description: string;
+  events: Event[];
+  icon: React.ElementType;
+  gradient: string;
+}
+
+const ScrollableEventList: React.FC<ScrollableEventListProps> = ({ title, description, events, icon: Icon, gradient }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
@@ -190,7 +235,7 @@ const ScrollableEventList = ({ title, description, events, icon: Icon, gradient 
     return () => window.removeEventListener('resize', checkScroll);
   }, [events]);
 
-  const scroll = (direction) => {
+  const scroll = (direction: 'left' | 'right') => {
     if (containerRef.current) {
       const scrollAmount = direction === 'left' ? -400 : 400;
       containerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
@@ -252,7 +297,11 @@ const ScrollableEventList = ({ title, description, events, icon: Icon, gradient 
   );
 };
 
-const SearchResults = ({ events }) => {
+interface SearchResultsProps {
+  events: Event[];
+}
+
+const SearchResults: React.FC<SearchResultsProps> = ({ events }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -267,15 +316,23 @@ const SearchResults = ({ events }) => {
   );
 };
 
-const ExploreEventsPage = () => {
-  const [events, setEvents] = useState({
+interface EventsState {
+  featured: Event[];
+  today: Event[];
+  weekend: Event[];
+  concerts: Event[];
+  exclusive: Event[];
+}
+
+const ExploreEventsPage: React.FC = () => {
+  const [events, setEvents] = useState<EventsState>({
     featured: [],
     today: [],
     weekend: [],
     concerts: [],
     exclusive: []
   });
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState<Event[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -283,10 +340,10 @@ const ExploreEventsPage = () => {
     const fetchEvents = async () => {
       try {
         const eventsObj = await getAllEvents();
-        const futureEvents = eventsObj.filter((event) => new Date(event.date) >= new Date());
+        const futureEvents = eventsObj.filter((event: { date: string | number | Date; }) => new Date(event.date) >= new Date());
         
         const eventsWithClubNames = await Promise.all(
-          futureEvents.map(async (event) => {
+          futureEvents.map(async (event: { club: any; _id: any; }) => {
             try {
               const club = await fetchClubInfo(event.club);
               return {
@@ -310,7 +367,7 @@ const ExploreEventsPage = () => {
         );
 
         const sortedEvents = sortEventsByType(eventsWithClubNames);
-        setEvents(sortedEvents);
+        setEvents(sortedEvents as EventsState);
       } catch (error) {
         console.error('Error fetching events:', error);
         setEvents({
@@ -328,7 +385,7 @@ const ExploreEventsPage = () => {
     fetchEvents();
   }, []);
 
-  const handleSearch = (term) => {
+  const handleSearch = (term: string) => {
     setIsSearching(true);
     const allEvents = [
       ...events.featured,
@@ -472,10 +529,10 @@ const ExploreEventsPage = () => {
             >
               {EVENT_CATEGORIES.map((category) => (
                 <ScrollableEventList
-                  key={category.id}
+                  key={category._id}
                   title={category.title}
                   description={category.description}
-                  events={events[category.id]}
+                  events={events[category._id as keyof EventsState]} // Type assertion to fix the error
                   icon={category.icon}
                   gradient={category.gradient}
                 />

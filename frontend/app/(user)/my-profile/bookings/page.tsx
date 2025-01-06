@@ -283,6 +283,7 @@ const MyBookingsPage = () => {
                   onClick={() => {
                     if (reservationToDelete) {
                       // Handle deletion here
+                      console.log(reservations)
                       setReservations(prev => prev.filter(r => r._id !== reservationToDelete._id));
                       setShowDeleteModal(false);
                     }

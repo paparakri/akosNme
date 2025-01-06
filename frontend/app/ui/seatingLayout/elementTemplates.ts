@@ -5,6 +5,7 @@ export const elementTemplates: Record<string, ElementTemplate> = {
   table: {
     type: 'table',
     name: 'Table',
+    label: 'Table',
     icon: '🪑',
     defaultWidth: 80,
     defaultHeight: 80,
@@ -19,8 +20,9 @@ export const elementTemplates: Record<string, ElementTemplate> = {
     }
   },
   booth: {
-    type: 'booth',
+    type: 'table',
     name: 'Booth',
+    label: 'Booth',
     icon: '🛋️',
     defaultWidth: 120,
     defaultHeight: 100,
@@ -37,6 +39,7 @@ export const elementTemplates: Record<string, ElementTemplate> = {
   bar: {
     type: 'bar',
     name: 'Bar',
+    label: 'Bar',
     icon: '🍸',
     defaultWidth: 200,
     defaultHeight: 60,
@@ -52,6 +55,7 @@ export const elementTemplates: Record<string, ElementTemplate> = {
   stage: {
     type: 'stage',
     name: 'Stage',
+    label: 'Stage',
     icon: '🎭',
     defaultWidth: 200,
     defaultHeight: 150,
@@ -65,8 +69,9 @@ export const elementTemplates: Record<string, ElementTemplate> = {
     }
   },
   danceFloor: {
-    type: 'danceFloor',
+    type: 'stage',
     name: 'Dance Floor',
+    label: 'Dance Floor',
     icon: '💃',
     defaultWidth: 200,
     defaultHeight: 200,
@@ -82,6 +87,7 @@ export const elementTemplates: Record<string, ElementTemplate> = {
   entrance: {
     type: 'entrance',
     name: 'Entrance',
+    label: 'Entrance',
     icon: '🚪',
     defaultWidth: 60,
     defaultHeight: 20,
@@ -95,8 +101,9 @@ export const elementTemplates: Record<string, ElementTemplate> = {
     }
   },
   vipArea: {
-    type: 'vipArea',
+    type: 'stage',
     name: 'VIP Area',
+    label: 'VIP Area',
     icon: '👑',
     defaultWidth: 200,
     defaultHeight: 200,

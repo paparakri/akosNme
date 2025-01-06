@@ -10,7 +10,9 @@ import {
   PopoverTrigger,
   PopoverContent,
   useDisclosure,
-  Text
+  Text,
+  BoxProps,
+  FlexProps
 } from '@chakra-ui/react';
 
 import {
@@ -24,7 +26,7 @@ import { logout } from '../lib/authHelper';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { UserMenu } from './userMenu';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Transition } from 'framer-motion';
 import { useViewMode } from '../lib/viewModelContext';
 import ViewModeToggle from './viewModeToggle';
 
@@ -139,7 +141,6 @@ export default function Navbar() {
   const isUserSignedIn = useIsUserSignedIn();
   const { viewMode } = useViewMode();
   const userType = typeof window !== 'undefined' ? localStorage.getItem('userType') : null;
-  console.log("Here is the user type: ", userType);
 
   const navItems = isUserSignedIn 
     ? viewMode === 'club'
@@ -196,8 +197,13 @@ export default function Navbar() {
     }
   };
 
-  const MotionBox = motion(Box);
-  const MotionFlex = motion(Flex);
+  const MotionBox = motion<Omit<BoxProps, keyof HTMLDivElement>>(Box as any);
+  const MotionFlex = motion<Omit<FlexProps, keyof HTMLDivElement>>(Flex as any);
+
+  const transitionConfig: Transition = {
+    duration: 0.5,
+    ease: [0.25, 0.1, 0.25, 1]
+  };
 
   const DesktopNav = () => (
     <Stack direction="row" spacing={1}>
@@ -406,31 +412,38 @@ export default function Navbar() {
 
   return (
     <MotionBox
-      position="fixed"
-      top={4}
-      left={0}
-      right={0}
-      mx="auto"
-      zIndex={1000}
-      width="90%"
-      maxWidth="1200px"
+      style={{  // Use style prop instead of direct props
+        position: 'fixed',
+        top: 4,
+        left: 0,
+        right: 0,
+        width: '90%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        zIndex: 1000
+      }}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={transitionConfig}
     >
       <MotionFlex
-        bg={scrolled ? 'rgba(0, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.5)'}
-        color="white"
-        minH="60px"
-        py={2}
-        px={6}
-        alignItems="center"
-        borderRadius="xl"
-        backdropFilter="blur(10px)"
-        boxShadow={scrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none'}
-        borderWidth="1px"
-        borderColor={scrolled ? 'whiteAlpha.100' : 'transparent'}
-        transition="all 0.3s ease"
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          backgroundColor: scrolled ? 'rgba(0, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.5)',
+          color: 'white',
+          minHeight: '60px',
+          padding: '8px 24px',
+          alignItems: 'center',
+          borderRadius: 'xl',
+          backdropFilter: 'blur(10px)',
+          boxShadow: scrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
+          borderWidth: '1px',
+          borderColor: scrolled ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         <Flex
           flex={{ base: 1, md: 'auto' }}
@@ -450,9 +463,12 @@ export default function Navbar() {
           </motion.button>
         </Flex>
 
-        <MotionFlex 
-          flex={{ base: 1 }} 
-          justify={{ base: 'center', md: 'start' }}
+        <MotionFlex
+          style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center'
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}

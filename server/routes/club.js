@@ -4,7 +4,7 @@ const path = require('path');
 const { getEvents, postEvent, updateEvent, deleteEvent } = require('../controllers/events');
 const { saveLayout, getClubUser, getClubUserByName, createClubUser, getFollowers, addRemoveInterest, getInterests, updateClubUser, deleteClubUser } = require('../controllers/clubs');
 const { updateAllClubs } = require("../config/updateAllUsers.js");
-const { getClubReservations } = require('../controllers/reservations');
+const { getClubReservations, getClubReservationsByDate } = require('../controllers/reservations');
 const { getRangeAvailability } = require('../controllers/availability');
 const { reservationStream } = require('../controllers/sseControl');
 
@@ -42,6 +42,9 @@ router.route('/:user/save-layout')
 
 router.route('/:user/reservations')
     .get(getClubReservations);
+
+router.route('/:user/reservations/:date')
+    .get(getClubReservationsByDate);
 
 router.route('/:user/availability')
     .get(getRangeAvailability);

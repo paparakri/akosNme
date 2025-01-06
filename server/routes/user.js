@@ -24,6 +24,9 @@ const {
     removeFriend,
 } = require('../controllers/friends');
 const { followClub, unfollowClub } = require('../controllers/following');
+const FeedPost = require('../models/feedPost.js');
+const Event = require('../models/event.js');
+const User = require('../models/normalUser.js');
 
 // Friend-related routes
 router.route('/:id/friends')
@@ -50,23 +53,36 @@ router.route('/:id/following/clubs/:clubId')
     .delete(unfollowClub);
 
 //FEED---------------------------------
-
-router.get('/feed', async (req, res) => {
+  router.get('/feed/:user', async (req, res) => {
     try {
-      const userId = req.user?.id;  // From auth middleware
+      console.log("Inside Feed Route");
+      const id = req.params.user;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
-      const includeClubs = req.query.includeClubs !== 'false';
-      const includeFriends = req.query.includeFriends !== 'false';
-  
-      const posts = await feedService.getFeedPosts({
-        userId,
-        page,
-        limit,
-        includeClubs,
-        includeFriends
-      });
-  
+      const skip = (page - 1) * limit;
+
+      const posts = await getFeedPosts(id, skip, limit);
+
+      // Group similar posts
+      /*const groupedPosts = posts.reduce((acc, post) => {
+        const similarPost = acc.find(p => 
+          p.postType === post.postType &&
+          p.club._id.toString() === post.club._id.toString() &&
+          new Date(p.createdAt).getTime() > new Date(post.createdAt).getTime() - 3600000
+        );
+
+        if (similarPost) {
+          if (!similarPost.groupedPosts) {
+            similarPost.groupedPosts = [];
+          }
+          similarPost.groupedPosts.push(post);
+        } else {
+          acc.push(post);
+        }
+
+        return acc;
+      }, []);*/
+
       res.json({
         success: true,
         data: posts
@@ -76,6 +92,35 @@ router.get('/feed', async (req, res) => {
       res.status(500).json({
         success: false,
         error: 'Failed to fetch feed posts'
+      });
+    }
+  });
+
+  // Get user's feed posts
+  router.get('/feed/actor/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      const skip = (page - 1) * limit;
+
+      const posts = await FeedPost.find({ actor: userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('actor', 'username firstName lastName')
+        .populate('club', 'username displayName address')
+        .lean();
+
+      res.json({
+        success: true,
+        data: posts
+      });
+    } catch (error) {
+      console.error('Error in GET /feed/:userId:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch user feed posts'
       });
     }
   });
@@ -231,5 +276,93 @@ router.route('/:id/reviews')
 
 router.route('/:id/reservations')
     .get(getReservations);
+
+
+//--------------------------HELPER FUNCTION---------------------------
+// Get feed posts with proper population of actor (NormalUser or ClubUser)
+const getFeedPosts = async (id, skip = 0, limit = 10) => {
+  try {
+    const userObj = await User.findById(id);
+    const friends = userObj.friends;
+    const followedClubs = userObj.clubInterests;
+    const posts = [];
+
+    for(let i=0; i<friends.length; i++){
+      const rawPosts = await FeedPost.find({actor: friends[i]})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      // First try to populate assuming actor is NormalUser
+      .populate(
+        'actor',
+        'username firstName lastName picturePath',
+        'NormalUser'
+      )
+      // Also populate club reference
+      .populate(
+        'club',
+        'username displayName images address',
+        'ClubUser'
+      )
+      .lean();
+
+      posts.push(...rawPosts);
+    }
+
+    for(let i=0; i<followedClubs.length; i++){
+      const rawPosts = await FeedPost.find({actor: followedClubs[i]})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      // First try to populate assuming actor is NormalUser
+      .populate(
+        'actor',
+        'username firstName lastName picturePath',
+        'NormalUser'
+      )
+      // Also populate club reference
+      .populate(
+        'club',
+        'username displayName images address',
+        'ClubUser'
+      )
+      .lean();
+
+      posts.push(...rawPosts);
+    }
+
+    // For any posts where actor wasn't populated (null), try populating as ClubUser
+    const populatedPosts = await Promise.all(posts.map(async (post) => {
+      if (!post.actor) {
+        // If actor is null, try populating as ClubUser
+        const populatedPost = await FeedPost.findById(post._id)
+          .populate(
+            'actor',
+            'username displayName images address',
+            'ClubUser'
+          )
+          .lean();
+        return populatedPost;
+      }
+      return post;
+    }));
+
+    // Additional population for event/reservation/review metadata if needed
+    const fullyPopulatedPosts = await Promise.all(populatedPosts.map(async (post) => {
+      if (post.postType === 'event' && post.metadata.eventId) {
+        const event = await Event.findById(post.metadata.eventId)
+          .select('name description date images')
+          .lean();
+        post.metadata.eventDetails = event;
+      }
+      return post;
+    }));
+
+    return fullyPopulatedPosts;
+  } catch (error) {
+    console.error('Error fetching feed posts:', error);
+    throw error;
+  }
+};
 
 module.exports = router;

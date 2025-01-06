@@ -60,8 +60,9 @@ export const useHeroStats = (
                 const eventObj = await fetchEventById(eventId);
                 if (eventObj) {
                   //console.log(eventObj);
-                  const eventDate = new Date(eventObj.date);
+                  const eventDate = new Date(eventObj.date.split('-').reverse().join('-'));
                   //console.log(`Made new date with ${eventObj.date} and got: ${eventDate}`)
+                  console.log("Checking if event with id: ", );
                   if (eventDate >= weekendStart && eventDate <= weekendEnd) {
                     weekendEvents++;
                   }

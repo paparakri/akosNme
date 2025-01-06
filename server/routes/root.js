@@ -27,13 +27,14 @@ const upload = multer({
     }
 });
 
-router.post('/image/upload/:folder/:fileName?', upload.single('file'), async (req, res) => {
+router.post('/image/upload/:fileName?', upload.single('file'), async (req, res) => {
     try {
+        const folderPath = req.body.folderPath;
         if (!req.file) {
             throw new Error('No file uploaded');
         }
 
-        console.log(`Inside POST in /image/upload/${req.params.folder}/${req.params.fileName}`);
+        console.log(`Inside POST in /image/upload/${folderPath}/${req.params.fileName}`);
         console.log('File details:', {
             mimetype: req.file.mimetype,
             size: req.file.size,
@@ -43,7 +44,7 @@ router.post('/image/upload/:folder/:fileName?', upload.single('file'), async (re
         const result = await uploadImage({
             file: req.file.buffer,
             fileName: req.params.fileName,
-            folder: req.params.folder,
+            folder: folderPath,
             contentType: req.file.mimetype
         });
         res.status(200).json(result);
@@ -53,9 +54,10 @@ router.post('/image/upload/:folder/:fileName?', upload.single('file'), async (re
     }
 });
 
-router.get('/image/:folder/:fileName', async (req, res) => {
+router.get('/image/:fileName', async (req, res) => {
     try {
-      const downloadURL = await getImage(req.params.fileName, req.params.folder);
+      const folderPath = req.params.folderPath;
+      const downloadURL = await getImage(req.params.fileName, folderPath);
       res.json({ downloadURL });
     } catch (error) {
       console.error('Get image error:', error);

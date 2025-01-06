@@ -130,7 +130,7 @@ export const ElementProperties: React.FC<ElementPropertiesProps> = ({
         )}
 
         {/* Capacity (for tables and booths) */}
-        {(element.type === 'table' || element.type === 'booth') && (
+        {(element.type === 'table' || element.type === 'bar') && (
           <div>
             <label className="block text-sm font-medium text-white/70 mb-1">
               Capacity
@@ -212,8 +212,9 @@ export const ElementProperties: React.FC<ElementPropertiesProps> = ({
                   value={element.style?.fill || template.style.fill}
                   onChange={(e) => onChange({ 
                     style: { 
-                      ...element.style, 
-                      fill: e.target.value 
+                      ...element.style,
+                      fill: e.target.value,
+                      stroke: element.style?.stroke || template.style.stroke
                     } 
                   })}
                   className="w-full h-8 rounded cursor-pointer"
@@ -221,8 +222,9 @@ export const ElementProperties: React.FC<ElementPropertiesProps> = ({
                 <button
                   onClick={() => onChange({ 
                     style: { 
-                      ...element.style, 
-                      fill: template.style.fill 
+                      ...element.style,
+                      fill: template.style.fill,
+                      stroke: element.style?.stroke || template.style.stroke
                     } 
                   })}
                   className="px-2 py-1 text-xs bg-white/10 rounded hover:bg-white/20"
@@ -241,8 +243,9 @@ export const ElementProperties: React.FC<ElementPropertiesProps> = ({
                   value={element.style?.stroke || template.style.stroke}
                   onChange={(e) => onChange({ 
                     style: { 
-                      ...element.style, 
-                      stroke: e.target.value 
+                      ...element.style,
+                      fill: element.style?.fill || template.style.fill,
+                      stroke: e.target.value
                     } 
                   })}
                   className="w-full h-8 rounded cursor-pointer"
@@ -250,8 +253,9 @@ export const ElementProperties: React.FC<ElementPropertiesProps> = ({
                 <button
                   onClick={() => onChange({ 
                     style: { 
-                      ...element.style, 
-                      stroke: template.style.stroke 
+                      ...element.style,
+                      fill: element.style?.fill || template.style.fill,
+                      stroke: template.style.stroke
                     } 
                   })}
                   className="px-2 py-1 text-xs bg-white/10 rounded hover:bg-white/20"

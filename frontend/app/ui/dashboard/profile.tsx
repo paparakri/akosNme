@@ -25,6 +25,12 @@ type SocialMediaLinks = {
   twitter: string;
 };
 
+type Location = {
+  type: string;
+  coordinates: number[];
+  displayString: string;
+};
+
 type ClubFormData = {
   _id: string,
   username: string;
@@ -32,7 +38,7 @@ type ClubFormData = {
   displayName: string;
   description: string;
   address: string;
-  location: Object;
+  location: Location;
   capacity: number | string;
   openingHours: {
     [key: string]: {
@@ -85,7 +91,11 @@ const ProfilePage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [clubData, setClubData] = useState<ClubFormData>({
     _id: '',
-    location: {},
+    location: {
+      type: '',
+      coordinates: [],
+      displayString: '',
+    },
     username: 'clubuser123',
     email: 'club@example.com',
     displayName: 'Awesome Club',

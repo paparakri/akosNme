@@ -5,12 +5,24 @@ import { Camera, Edit2, Mail, Phone, Calendar, MapPin, Award, Save, X } from 'lu
 import { getCurrentUser } from '../../lib/userStatus';
 import { fetchNormalUser, switchUsername2Id, updateNormalUser } from '../../lib/backendAPI';
 
+interface User {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  bio: string;
+  picturePath: string;
+  loyaltyPoints: number;
+}
+
 const UserProfilePage = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState(null);
+  const [editedUser, setEditedUser] = useState<User | null>(null);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -27,7 +39,7 @@ const UserProfilePage = () => {
       const userData = await fetchNormalUser(userId);
       setUser(userData);
       setEditedUser(userData);
-    } catch (err:any) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -44,7 +56,8 @@ const UserProfilePage = () => {
 
   const handleSave = async () => {
     try {
-      const userId = await switchUsername2Id(user?.username || "");
+      if (!user?.username || !editedUser) return;
+      const userId = await switchUsername2Id(user.username);
       const updatedUser = await updateNormalUser(userId, editedUser);
       setUser(updatedUser);
       setIsEditing(false);
@@ -52,6 +65,8 @@ const UserProfilePage = () => {
       console.error('Error updating profile:', error);
     }
   };
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -73,8 +88,8 @@ const UserProfilePage = () => {
             <div className="relative">
               <div className="w-32 h-32 rounded-full border-4 border-blue-400 overflow-hidden">
                 <img 
-                  src={user?.picturePath || '/default-avatar.svg'} 
-                  alt={user?.username}
+                  src={user.picturePath || '/default-avatar.svg'} 
+                  alt={user.username}
                   className="w-full h-full object-cover"
                 />
                 <button className="absolute bottom-2 right-2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors">
@@ -86,13 +101,13 @@ const UserProfilePage = () => {
             <div className="flex-1 mb-4">
               <div className="flex items-center space-x-4">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                  {`${user?.firstName} ${user?.lastName}`}
+                  {`${user.firstName} ${user.lastName}`}
                 </h1>
                 <span className="px-3 py-1 rounded-full bg-blue-400/10 text-blue-400 text-sm">
-                  @{user?.username}
+                  @{user.username}
                 </span>
               </div>
-              <p className="mt-2 text-gray-300 max-w-2xl">{user?.bio}</p>
+              <p className="mt-2 text-gray-300 max-w-2xl">{user.bio}</p>
             </div>
           </div>
         </div>
@@ -111,11 +126,11 @@ const UserProfilePage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-white/5">
                   <div className="text-sm text-gray-400">Loyalty Points</div>
-                  <div className="text-2xl font-bold text-blue-400">{user?.loyaltyPoints}</div>
+                  <div className="text-2xl font-bold text-blue-400">{user.loyaltyPoints}</div>
                 </div>
                 <div className="p-4 rounded-xl bg-white/5">
                   <div className="text-sm text-gray-400">Events Attended</div>
-                  <div className="text-2xl font-bold text-purple-400">--(Doesn't Work)</div>
+                  <div className="text-2xl font-bold text-purple-400">--(Doesn&apos;t Work)</div>
                 </div>
               </div>
             </div>
@@ -160,7 +175,7 @@ const UserProfilePage = () => {
                 </div>
                 <div>
                   <div className="text-sm text-gray-400">Email</div>
-                  <div className="text-white">{user?.email}</div>
+                  <div className="text-white">{user.email}</div>
                 </div>
               </div>
               
@@ -170,7 +185,7 @@ const UserProfilePage = () => {
                 </div>
                 <div>
                   <div className="text-sm text-gray-400">Phone</div>
-                  <div className="text-white">{user?.phoneNumber}</div>
+                  <div className="text-white">{user.phoneNumber}</div>
                 </div>
               </div>
               
@@ -180,7 +195,7 @@ const UserProfilePage = () => {
                 </div>
                 <div>
                   <div className="text-sm text-gray-400">Birthday</div>
-                  <div className="text-white">{new Date(user?.dateOfBirth).toLocaleDateString()}</div>
+                  <div className="text-white">{new Date(user.dateOfBirth).toLocaleDateString()}</div>
                 </div>
               </div>
               

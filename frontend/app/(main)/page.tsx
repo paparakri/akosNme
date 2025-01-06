@@ -302,7 +302,7 @@ export default function Home() {
                     Exploring New Territories
                   </h3>
                   <p className="text-gray-400 max-w-md mx-auto">
-                    We're currently expanding to your area. Stay tuned for an amazing collection of venues!
+                    We&apos;re currently expanding to your area. Stay tuned for an amazing collection of venues!
                   </p>
                 </motion.div>
               )}

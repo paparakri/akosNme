@@ -1,11 +1,17 @@
 import { motion } from 'framer-motion';
 import { Building2, User } from 'lucide-react';
 import { useViewMode } from '@/app/lib/viewModelContext';
+import { getUserType } from '../lib/userStatus';
 
 export default function ViewModeToggle() {
   const { viewMode, toggleViewMode, isClub } = useViewMode();
 
-  console.log("Inside ViewModeToggle.tsx with the above info: ", viewMode, toggleViewMode, isClub);
+
+  const userType = getUserType();
+  
+  if(userType === 'normal') {
+    return null;
+  }
 
   if (!viewMode) return null;
 

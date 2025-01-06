@@ -125,7 +125,7 @@ const Layout: React.FC = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'tables':
-        return <LayoutManager id={clubData._id} date={new Date()} onSave={() => console.log("Saving Not Yet Implemented")} />;
+        return <LayoutManager id={clubData._id} onSave={() => console.log("Saving Not Yet Implemented")} />;
       case 'events':
         return <Events />;
       case 'settings':

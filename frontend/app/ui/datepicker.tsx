@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, parse } from 'date-fns';
 
 interface DatePickerProps {
   name?: string;
@@ -11,6 +11,7 @@ interface DatePickerProps {
   isInvalid?: boolean;
   label?: string;
   errorMsg?: string;
+  onCalendarClick?: (e: React.MouseEvent) => void;
 }
 
 const EnhancedDatePicker: React.FC<DatePickerProps> = ({
@@ -20,7 +21,8 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
   isRequired = false,
   isInvalid = false,
   label = 'Date',
-  errorMsg = ''
+  errorMsg = '',
+  onCalendarClick,
 }) => {
   const [displayValue, setDisplayValue] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -41,23 +43,42 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
 
   useEffect(() => {
     if (value) {
-      const parts = value.split('-');
-      if (parts.length === 3) {
-        setDisplayValue(`${parts[2]}/${parts[1]}/${parts[0]}`);
-        setSelectedDate(new Date(value));
+      try {
+        // Parse DD-MM-YYYY to Date with explicit day-month order
+        const [day, month, year] = value.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        
+        if (isNaN(date.getTime()) || 
+            date.getDate() !== day || 
+            date.getMonth() !== month - 1 || 
+            date.getFullYear() !== year) {
+          throw new Error('Invalid date');
+        }
+        
+        setDisplayValue(value);
+        setSelectedDate(date);
+        setCurrentMonth(date);
+      } catch (error) {
+        console.error('Error parsing date:', error);
+        setDisplayValue('');
+        setSelectedDate(null);
       }
+    } else {
+      setDisplayValue('');
+      setSelectedDate(null);
     }
   }, [value]);
 
   const formatDateForInput = (inputValue: string) => {
-    // Remove all non-digits and existing slashes
-    let cleaned = inputValue.replace(/[^\d]/g, '');
+    // Remove all non-digits and dashes
+    let cleaned = inputValue.replace(/[^\d-]/g, '');
     
-    // Handle backspace - if last character was removed, remove the slash too
-    if (inputValue.endsWith('/')) {
+    // Handle backspace - if last character was removed, remove the dash too
+    if (inputValue.endsWith('-')) {
       cleaned = cleaned.slice(0, -1);
     }
     
+    // Format as DD-MM-YYYY
     if (cleaned.length >= 4) {
       cleaned = cleaned.slice(0, 8);
       const day = cleaned.slice(0, 2);
@@ -65,13 +86,13 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
       const year = cleaned.slice(4);
       
       if (cleaned.length > 4) {
-        return `${day}/${month}/${year}`;
+        return `${day}-${month}-${year}`;
       }
-      return `${day}/${month}`;
+      return `${day}-${month}`;
     } else if (cleaned.length >= 2) {
       const day = cleaned.slice(0, 2);
       const month = cleaned.slice(2);
-      return `${day}/${month}`;
+      return `${day}-${month}`;
     }
     
     return cleaned;
@@ -82,7 +103,6 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
     const formattedValue = formatDateForInput(inputValue);
     setDisplayValue(formattedValue);
   
-    // Clear the value if input is empty
     if (!inputValue) {
       onChange({ target: { name, value: '' } });
       setSelectedDate(null);
@@ -90,27 +110,51 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
     }
   
     if (formattedValue.length === 10) {
-      const [day, month, year] = formattedValue.split('/');
-      
-      const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      if (
-        dateObj.getDate() === parseInt(day) &&
-        dateObj.getMonth() === parseInt(month) - 1 &&
-        dateObj.getFullYear() === parseInt(year)
-      ) {
-        setSelectedDate(dateObj);
-        const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        onChange({ target: { name, value: isoDate } });
+      const [day, month, year] = formattedValue.split('-');
+      try {
+        // Force DD-MM-YYYY interpretation
+        const dayNum = parseInt(day);
+        const monthNum = parseInt(month);
+        const yearNum = parseInt(year);
+        
+        // Create date with explicit day-month order
+        const dateObj = new Date(yearNum, monthNum - 1, dayNum);
+        
+        // Verify the date is valid and matches our input
+        if (
+          dateObj.getDate() === dayNum &&
+          dateObj.getMonth() === monthNum - 1 &&
+          dateObj.getFullYear() === yearNum
+        ) {
+          setSelectedDate(dateObj);
+          setCurrentMonth(dateObj);
+          // Format as DD-MM-YYYY for the onChange event
+          const formattedDate = `${String(dayNum).padStart(2, '0')}-${String(monthNum).padStart(2, '0')}-${yearNum}`;
+          onChange({ target: { name, value: formattedDate } });
+        }
+      } catch (error) {
+        console.error('Invalid date:', error);
       }
     }
   };
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    const formattedDate = format(date, 'yyyy-MM-dd');
+    
+    // Always keep dates in DD-MM-YYYY format
+    const formattedDate = formatDateString(date);
+    
     onChange({ target: { name, value: formattedDate } });
-    setDisplayValue(format(date, 'dd/MM/yyyy'));
+    setDisplayValue(formattedDate);
     setIsOpen(false);
+  };
+
+  // Helper function to ensure consistent date formatting
+  const formatDateString = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   const renderCalendar = () => {
@@ -124,6 +168,7 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-4">
           <motion.button
+            type='button'
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -137,6 +182,7 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
           </h3>
           
           <motion.button
+            type='button'
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
@@ -168,6 +214,7 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
             
             return (
               <motion.button
+                type='button'
                 key={day.toString()}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -205,7 +252,7 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
           type="text"
           value={displayValue}
           onChange={handleInputChange}
-          placeholder="dd/mm/yyyy"
+          placeholder="dd-mm-yyyy"
           maxLength={10}
           className={`
             w-full bg-gray-800 border ${isInvalid ? 'border-red-500' : 'border-gray-600'} 
@@ -219,7 +266,12 @@ const EnhancedDatePicker: React.FC<DatePickerProps> = ({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={(e) => {
+              e.preventDefault();
+              onCalendarClick?.(e);
+              setIsOpen(!isOpen);
+            }}
+            type="button"
             className="p-1 hover:bg-gray-700 rounded-full transition-colors pointer-events-auto"
           >
             <Calendar className="w-5 h-5 text-gray-400" />

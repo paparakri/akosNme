@@ -1,7 +1,7 @@
 const { ref, uploadBytesResumable, getDownloadURL } = require("firebase/storage");
 const { storage } = require("../config/firebaseConfig");
 
-const uploadImage = ({ file, fileName, folder = "profilePics", contentType }) => {
+const uploadImage = ({ file, fileName, folderPath, contentType }) => {
   return new Promise((resolve, reject) => {
       if (!file) {
           reject(new Error("No file provided"));
@@ -16,7 +16,7 @@ const uploadImage = ({ file, fileName, folder = "profilePics", contentType }) =>
           (fileName.includes('.') ? fileName : `${fileName}${extension}`) : 
           `${crypto.randomUUID()}${extension}`;
 
-      const storageRef = ref(storage, `${folder}/${newName}`);
+      const storageRef = ref(storage, `${folderPath}${newName}`);
 
       // Create metadata object with content type
       const metadata = {
@@ -51,9 +51,9 @@ const uploadImage = ({ file, fileName, folder = "profilePics", contentType }) =>
   });
 };
 
-const getImage = async (fileName, folder = "profilePics") => {
+const getImage = async (fileName, folderPath) => {
   try {
-    const storageRef = ref(storage, `${folder}/${fileName}`);
+    const storageRef = ref(storage, `${folderPath}${fileName}`);
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
   } catch (error) {

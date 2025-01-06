@@ -2,11 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Clock, AlertCircle } from 'lucide-react';
 
-const ReservationStatusBadge = ({ status, timestamp, expiryDate }) => {
-  const [timeRemaining, setTimeRemaining] = useState(null);
+type ReservationStatus = 'pending' | 'accepted' | 'rejected' | 'past';
+
+interface StatusConfig {
+  icon: typeof Clock;
+  bgColor: string;
+  textColor: string;
+  label: string;
+}
+
+interface StatusBadgeProps {
+  status: ReservationStatus;
+  timestamp: string;
+  expiryDate: string;
+}
+
+interface ActionProps {
+  status: ReservationStatus;
+  onAccept: () => void;
+  onReject: () => void;
+  onCancel: () => void;
+  canModify: boolean;
+  isClub: boolean;
+}
+
+interface Reservation {
+  status: ReservationStatus;
+  startTime: string;
+  createdAt: string;
+}
+
+interface ReservationHandlerProps {
+  reservation: Reservation;
+  isClub: boolean;
+  onStatusChange: (status: ReservationStatus) => void;
+  onCancel: () => void;
+}
+
+const ReservationStatusBadge: React.FC<StatusBadgeProps> = ({ status, timestamp, expiryDate }) => {
+  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   useEffect(() => {
-    // Calculate time remaining if it's an active reservation
     if (status === 'pending' || status === 'accepted') {
       const interval = setInterval(() => {
         const now = new Date();
@@ -19,14 +55,14 @@ const ReservationStatusBadge = ({ status, timestamp, expiryDate }) => {
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
           setTimeRemaining(`${days}d remaining`);
         }
-      }, 1000 * 60); // Update every minute
+      }, 1000 * 60);
 
       return () => clearInterval(interval);
     }
   }, [status, expiryDate]);
 
-  const getStatusConfig = (status) => {
-    const configs = {
+  const getStatusConfig = (status: ReservationStatus): StatusConfig => {
+    const configs: Record<ReservationStatus, StatusConfig> = {
       pending: {
         icon: Clock,
         bgColor: 'bg-yellow-500/10',
@@ -53,7 +89,7 @@ const ReservationStatusBadge = ({ status, timestamp, expiryDate }) => {
       }
     };
 
-    return configs[status] || configs.pending;
+    return configs[status];
   };
 
   const config = getStatusConfig(status);
@@ -81,7 +117,7 @@ const ReservationStatusBadge = ({ status, timestamp, expiryDate }) => {
   );
 };
 
-const ReservationActions = ({
+const ReservationActions: React.FC<ActionProps> = ({
   status,
   onAccept,
   onReject,
@@ -131,18 +167,18 @@ const ReservationActions = ({
   );
 };
 
-export default function ReservationHandler({
+const ReservationHandler: React.FC<ReservationHandlerProps> = ({
   reservation,
   isClub,
   onStatusChange,
   onCancel
-}) {
-  const canModifyReservation = () => {
+}) => {
+  const canModifyReservation = (): boolean => {
     if (!reservation.startTime) return false;
     const now = new Date();
     const reservationDate = new Date(reservation.startTime);
     const hoursDiff = (reservationDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    return hoursDiff >= 24; // Can modify if more than 24 hours before reservation
+    return hoursDiff >= 24;
   };
 
   return (
@@ -165,4 +201,6 @@ export default function ReservationHandler({
       </div>
     </div>
   );
-}
+};
+
+export default ReservationHandler;

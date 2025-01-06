@@ -21,7 +21,6 @@ export default function TablesPage() {
   return (
     <LayoutManager 
       id={clubId} 
-      date={new Date()} 
       onSave={() => console.log("Saving Not Yet Implemented")}
     />
   );

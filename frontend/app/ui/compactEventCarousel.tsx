@@ -3,8 +3,26 @@ import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { getClubEvents } from '@/app/lib/backendAPI';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
-  const [events, setEvents] = useState([]);
+// First, let's define the Event interface
+interface Event {
+  _id: string;
+  id: string;
+  name: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  images?: string[];
+}
+
+// Update the component props interface
+interface CompactEventCarouselProps {
+  clubId: string;
+  autofillFunction: (date: Date, startTime: Date, endTime: string) => void;
+  matchingEvents: Event[];
+}
+
+const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }: CompactEventCarouselProps) => {
+  const [events, setEvents] = useState<Event[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,8 +94,12 @@ const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
                 style={{ zIndex: index === currentIndex ? 20 : 10 }}
               >
                 <motion.div 
-                  className={`backdrop-blur-sm rounded-xl overflow-hidden shadow-xl relative`}
-                  animate={
+                  className={`backdrop-blur-sm rounded-xl overflow-hidden shadow-xl relative ${
+                      matchingEvents.some(e => e._id === event._id)
+                        ? "border-2 border-purple-700/50 ring-2 ring-purple-500/30" 
+                        : "border border-white/10"
+                    }`}
+                    animate={
                     matchingEvents.some(e => e._id === event._id)
                       ? {
                           boxShadow: [
@@ -96,10 +118,6 @@ const CompactEventCarousel = ({ clubId, autofillFunction, matchingEvents }) => {
                       ease: "easeInOut" 
                     }
                   }}
-                  className={`${matchingEvents.some(e => e._id === event._id)
-                    ? "border-2 border-purple-700/50 ring-2 ring-purple-500/30" 
-                    : "border border-white/10"}
-                    backdrop-blur-sm rounded-xl overflow-hidden`}
                 >
                 <div className={`${matchingEvents.some(e => e._id === event._id) 
                   ? "bg-purple-500/10 ring-2 ring-purple-500/30 border border-white/10" 

@@ -59,7 +59,9 @@ const Form3 = ({ formData, setFormData }: { formData: FormData; setFormData: any
         <FormLabel>Social Media Links</FormLabel>
         <VStack spacing={2}>
           <InputGroup>
-            <InputLeftAddon children="https://facebook.com/" />
+            <InputLeftAddon>
+              https://facebook.com/
+            </InputLeftAddon>
             <Input
               name="facebook"
               value={formData.socialMediaLinks?.facebook || ''}
@@ -68,7 +70,9 @@ const Form3 = ({ formData, setFormData }: { formData: FormData; setFormData: any
             />
           </InputGroup>
           <InputGroup>
-            <InputLeftAddon children="https://instagram.com/" />
+            <InputLeftAddon>
+              https://instagram.com/
+            </InputLeftAddon>
             <Input
               name="instagram"
               value={formData.socialMediaLinks?.instagram || ''}
@@ -77,7 +81,9 @@ const Form3 = ({ formData, setFormData }: { formData: FormData; setFormData: any
             />
           </InputGroup>
           <InputGroup>
-            <InputLeftAddon children="https://twitter.com/" />
+            <InputLeftAddon>
+              https://twitter.com/
+            </InputLeftAddon>
             <Input
               name="twitter"
               value={formData.socialMediaLinks?.twitter || ''}

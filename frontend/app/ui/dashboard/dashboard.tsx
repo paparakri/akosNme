@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FiDollarSign, FiUsers, FiCalendar, FiStar, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { jwtDecode } from 'jwt-decode';
-import { fetchClubByName } from '../../lib/backendAPI';
+import { fetchClubByName, fetchClubReservations, fetchEventById } from '../../lib/backendAPI';
 import { IconType } from 'react-icons';
 import { motion, useInView } from 'framer-motion';
 import { ArrowDown, ArrowUp, DollarSign, Users } from 'lucide-react';
+import { format, parse, isValid } from 'date-fns';
+import _ from 'lodash';
 
 interface StatCardProps {
   title: string;
@@ -24,13 +26,9 @@ interface AnalyticsChartProps {
 
 interface ClubData {
   _id: string;
-  reservations: Array<{
-    createdAt: string;
-  }>;
+  reservations: Array<Object>;
   rating: number;
-  events: Array<{
-    date: string;
-  }>;
+  events: Array<Object>;
   followers: Array<any>;
 };
 
@@ -165,31 +163,80 @@ const StatCard: React.FC<StatCardProps> = ({
   );
 };
 
-const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
+const AnalyticsChart: React.FC<{ data: any[]; isLoading: boolean }> = ({ data, isLoading }) => {
   const [selectedDataKey, setSelectedDataKey] = useState<string | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
 
+  console.log("chartData: ", chartData);
+
+  // Format date helper function
+  const formatDateString = (dateStr: string) => {
+    // Try parsing as DD/MM/YYYY first
+    const parsedDate = parse(dateStr, 'dd/MM/yyyy', new Date());
+    
+    if (isValid(parsedDate)) {
+      return format(parsedDate, 'MMM yyyy'); // Changed format to include year
+    }
+    
+    // If that fails, try parsing as a full date string
+    const date = new Date(dateStr);
+    if (isValid(date)) {
+      return format(date, 'MMM yyyy'); // Changed format to include year
+    }
+    
+    return dateStr; // Return original string if parsing fails
+  };
+
   useEffect(() => {
     if (!isLoading && data) {
+      // Format dates in the data
+      const formattedData = data.map(item => ({
+        ...item,
+        name: formatDateString(item.name)
+      }));
+  
+      // Merge entries with the same month using lodash
+      const mergedData = _(formattedData)
+        .groupBy('name')
+        .map((group, name) => ({
+          name,
+          reservations: _.sumBy(group, 'reservations')
+        }))
+        .value()
+        .sort((a, b) => {
+          // Parse "MMM YYYY" format strings
+          const [aMonth, aYear] = a.name.split(' ');
+          const [bMonth, bYear] = b.name.split(' ');
+          
+          // Convert month names to numbers (0-11)
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const aMonthNum = months.indexOf(aMonth);
+          const bMonthNum = months.indexOf(bMonth);
+          
+          // Compare years first, then months
+          const yearDiff = parseInt(aYear) - parseInt(bYear);
+          if (yearDiff !== 0) return yearDiff;
+          return aMonthNum - bMonthNum;
+        });
+       
       // Animate data loading
       const timer = setTimeout(() => {
-        setChartData(data);
+        setChartData(mergedData);
       }, 500);
       return () => clearTimeout(timer);
     }
   }, [data, isLoading]);
 
   // Calculate trends
-  const calculateTrend = (key: string) => {
+  const calculateTrend = () => {
     if (!data || data.length < 2) return 0;
-    const lastValue = data[data.length - 1][key];
-    const previousValue = data[data.length - 2][key];
+    const lastValue = data[data.length - 1].reservations;
+    const previousValue = data[data.length - 2].reservations;
     return ((lastValue - previousValue) / previousValue) * 100;
   };
 
-  const reservationsTrend = calculateTrend('reservations');
-  const revenueTrend = calculateTrend('revenue');
+  const reservationsTrend = calculateTrend();
 
   if (isLoading) {
     return (
@@ -225,7 +272,6 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
                 style={{ backgroundColor: entry.color }}
               />
               <span className="text-white">
-                {entry.name === 'revenue' ? '$' : ''}
                 {entry.value.toLocaleString()}
               </span>
             </div>
@@ -251,7 +297,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
       {/* Content */}
       <div className="relative">
         {/* Stats Overview */}
-        <div className="mb-8 grid grid-cols-2 gap-4">
+        <div className="mb-8">
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="rounded-xl bg-white/5 p-4 backdrop-blur-sm"
@@ -270,27 +316,6 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
             </div>
             <p className="mt-2 text-2xl font-bold text-white">
               {data[data.length - 1]?.reservations.toLocaleString()}
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="rounded-xl bg-white/5 p-4 backdrop-blur-sm"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-green-400" />
-                <span className="text-sm text-gray-300">Revenue</span>
-              </div>
-              <div className={`flex items-center space-x-1 rounded-full px-2 py-1 text-xs ${
-                revenueTrend >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-              }`}>
-                {revenueTrend >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                <span>{Math.abs(revenueTrend).toFixed(1)}%</span>
-              </div>
-            </div>
-            <p className="mt-2 text-2xl font-bold text-white">
-              ${data[data.length - 1]?.revenue.toLocaleString()}
             </p>
           </motion.div>
         </div>
@@ -312,10 +337,6 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
                 <linearGradient id="reservationsGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
                   <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
                 </linearGradient>
               </defs>
 
@@ -342,10 +363,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
                 content={<CustomTooltip />}
                 cursor={{ stroke: 'rgba(255,255,255,0.2)' }}
               />
-              <Legend
-                onClick={(e) => setSelectedDataKey(selectedDataKey === e.dataKey ? null : e.dataKey as string)}
-                wrapperStyle={{ opacity: 0.8 }}
-              />
+              <Legend />
               <Line
                 type="monotone"
                 dataKey="reservations"
@@ -353,21 +371,8 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ data, isLoading }) => {
                 strokeWidth={2}
                 dot={{ stroke: '#f97316', strokeWidth: 2, r: 4, fill: '#fff' }}
                 activeDot={{ r: 8, stroke: '#f97316', strokeWidth: 2 }}
-                opacity={selectedDataKey ? (selectedDataKey === 'reservations' ? 1 : 0.3) : 1}
                 fillOpacity={1}
                 fill="url(#reservationsGradient)"
-              />
-
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#22c55e"
-                strokeWidth={2}
-                dot={{ stroke: '#22c55e', strokeWidth: 2, r: 4, fill: '#fff' }}
-                activeDot={{ r: 8, stroke: '#22c55e', strokeWidth: 2 }}
-                opacity={selectedDataKey ? (selectedDataKey === 'revenue' ? 1 : 0.3) : 1}
-                fillOpacity={1}
-                fill="url(#revenueGradient)"
               />
 
               {hoveredPoint && (
@@ -393,20 +398,27 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("FETCHING CLUB DATA");
-
         const token = localStorage.getItem('userToken');
         if (!token) throw new Error('No auth token found');
-
-        console.log("THIS IS THE TOKEN", token);
 
         const decoded = jwtDecode<{ username: string }>(token);
         if (!decoded.username) throw new Error('Invalid token');
 
-        console.log("THIS IS THE USERNAME", decoded.username);
-
         const clubInfo = await fetchClubByName(decoded.username);
-        setClubData(clubInfo);
+
+        const reservations = await fetchClubReservations(clubInfo._id);
+        const events = await Promise.all((clubInfo.events || []).map(async (event: string) => {
+          const eventInfo = await fetchEventById(event);
+          return eventInfo;
+        }));
+
+        const informedClubInfo = {
+          ...clubInfo,
+          reservations,
+          events,
+        };
+
+        setClubData(informedClubInfo);
       } catch (err) {
         console.error('Error fetching club data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -430,9 +442,8 @@ const Dashboard: React.FC = () => {
     const lastMonthReservations = clubData.reservations?.filter((res: any) => 
       new Date(res.createdAt).getMonth() === currentMonth - 1
     );
-
     const currentMonthEvents = clubData.events?.filter((event: any) => 
-      new Date(event.date).getMonth() === currentMonth
+      new Date(event.date).getTime() <= new Date().getTime() + 30 * 24 * 60 * 60 * 1000
     );
 
     return {
@@ -468,14 +479,16 @@ const Dashboard: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-purple-400">Dashboard Overview</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Track your venue's performance and insights
+            Track your venue&apos;s performance and insights
           </p>
         </div>
         
+        {/*
         <div className="flex items-center space-x-2 rounded-full bg-green-100 px-3 py-1">
           <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
           <span className="text-sm font-medium text-green-800">Live Updates</span>
         </div>
+        */}
       </div>
 
       {/* Stats Grid */}
@@ -520,17 +533,22 @@ const Dashboard: React.FC = () => {
               <div className="h-3 w-3 rounded-full bg-blue-500"></div>
               <span className="text-sm text-gray-600">Reservations</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <div className="h-3 w-3 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-600">Revenue</span>
-            </div>
           </div>
         </div>
-        <AnalyticsChart data={clubData?.reservations?.map(res => ({
-            name: new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short' }),
-            reservations: 1,
-            revenue: 0
-          })) || []} isLoading={isLoading}
+        <AnalyticsChart 
+          data={clubData?.reservations?.map((res: any) => {
+            let date = new Date(res.date);
+            if (isNaN(date.getTime())) {
+              let parts = res.date.split("-");
+              date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+            return {
+              name: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+              reservations: 1,
+              revenue: 0
+            }
+          }) || []} 
+          isLoading={isLoading}
         />
       </div>
     </div>

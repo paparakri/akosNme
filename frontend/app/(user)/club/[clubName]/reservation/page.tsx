@@ -218,8 +218,11 @@ const ReservationPage: React.FC = () => {
     } else {
       const selectedDate = new Date(reservation.date);
       const today = new Date();
+      // Reset the time part to compare just the dates
+      selectedDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
       if (selectedDate < today) {
-        newErrors.date = 'Please select a future date';
+        newErrors.date = 'Please select today or a future date';
       }
     }
 
@@ -259,7 +262,7 @@ const ReservationPage: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
     console.log(`Input name: ${name} && Input value: ${value}`);
     setReservation(prev => ({ ...prev, [name]: value }));

@@ -1,12 +1,13 @@
 const NormalUser = require('../models/normalUser');
 const ClubUser = require('../models/clubUser');
+const FeedPost = require('../models/feedPost');
 
 // Follow a club
 const followClub = async (req, res) => {
     try {
         const userId = req.params.id;
         const clubId = req.params.clubId;
-
+        
         const [user, club] = await Promise.all([
             NormalUser.findById(userId),
             ClubUser.findById(clubId)
@@ -26,26 +27,22 @@ const followClub = async (req, res) => {
         club.followers.push(userId);
 
         // Create feed item for the follow action
-        const FeedPost = new FeedPost({
-            actor: {
-                userId: userId,
-                userType: 'normal',
-                displayName: `${user.firstName} ${user.lastName}`,
-                picturePath: user.picturePath
-            },
-            verb: 'followed_club',
-            object: {
-                targetId: clubId,
-                targetType: 'club',
-                content: club.displayName
+        const feedPost = new FeedPost({
+            postType: 'event', // Required field - you might want to create a new type for follows
+            actor: userId,     // Just pass the ObjectId directly
+            club: clubId,      // Required field
+            metadata: {
+                eventName: `${user.firstName} ${user.lastName} followed ${club.displayName}`,
+                eventDescription: `New club follow activity`,
+                eventDate: new Date()
             }
         });
 
-        await Promise.all([user.save(), club.save(), FeedPost.save()]);
+        await Promise.all([user.save(), club.save(), feedPost.save()]);
 
-        res.status(200).json({ 
+        res.status(200).json({
             message: "Successfully followed club",
-            clubInterests: user.clubInterests 
+            clubInterests: user.clubInterests
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

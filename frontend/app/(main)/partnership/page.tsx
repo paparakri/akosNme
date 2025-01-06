@@ -169,7 +169,7 @@ const ClubPartneringPage: React.FC = () => {
             </span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Join our platform and transform your venue's digital presence. Get discovered by thousands of potential customers.
+            Join our platform and transform your venue&apos;s digital presence. Get discovered by thousands of potential customers.
           </p>
         </div>
 

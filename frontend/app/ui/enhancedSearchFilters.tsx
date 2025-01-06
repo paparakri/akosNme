@@ -4,6 +4,34 @@ import { Search, CalendarDays, MapPin, Music, Users, DollarSign } from 'lucide-r
 import { Popover, Transition } from '@headlessui/react'
 import { format } from 'date-fns';
 
+interface PriceRangeInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+interface FilterButtonProps {
+  icon: React.ElementType;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}
+
+interface FilterPopoverProps {
+  children: React.ReactNode;
+  buttonIcon: React.ElementType;
+  buttonLabel: string;
+}
+
+interface Filters {
+  date: string;
+  location: string;
+  radius: string;
+  minPrice: string;
+  maxPrice: string;
+  genres: string[];
+  capacity: string;
+}
+
 const RADIUS_OPTIONS = [
   { value: '1', label: '1 km' },
   { value: '5', label: '5 km' },
@@ -30,7 +58,7 @@ const CAPACITY_RANGES = [
   { value: '500+', label: '500+' }
 ];
 
-const PriceRangeInput = ({ value, onChange }) => {
+const PriceRangeInput = ({ value, onChange }: PriceRangeInputProps) => {
   const [min, max] = value.split('-').map(Number);
 
   return (
@@ -56,7 +84,7 @@ const PriceRangeInput = ({ value, onChange }) => {
   );
 };
 
-const FilterButton = ({ icon: Icon, label, active = false, onClick }) => (
+const FilterButton = ({ icon: Icon, label, active = false, onClick }: FilterButtonProps) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300
@@ -69,7 +97,7 @@ const FilterButton = ({ icon: Icon, label, active = false, onClick }) => (
   </button>
 );
 
-const FilterPopover = ({ children, buttonIcon: Icon, buttonLabel }) => (
+const FilterPopover = ({ children, buttonIcon: Icon, buttonLabel }: FilterPopoverProps) => (
   <Popover className="relative">
     {({ open }) => (
       <>
@@ -104,7 +132,7 @@ const EnhancedSearchFilters = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     date: searchParams.get('date') || '',
     location: searchParams.get('location') || '',
     radius: searchParams.get('radius') || '10',
@@ -136,6 +164,13 @@ const EnhancedSearchFilters = () => {
       genres: prev.genres.includes(genre)
         ? prev.genres.filter(g => g !== genre)
         : [...prev.genres, genre]
+    }));
+  };
+
+  const handleFilterClear = (key: keyof Filters) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: Array.isArray(prev[key]) ? [] : ''
     }));
   };
 
@@ -260,7 +295,7 @@ const EnhancedSearchFilters = () => {
               >
                 <span>{Array.isArray(value) ? value.join(', ') : value}</span>
                 <button
-                  onClick={() => setFilters(prev => ({ ...prev, [key]: Array.isArray(prev[key]) ? [] : '' }))}
+                  onClick={() => handleFilterClear(key as keyof Filters)}
                   className="hover:text-white"
                 >
                   ×

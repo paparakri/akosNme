@@ -50,7 +50,7 @@ const menuItems = [
   }
 ];
 
-const MenuItem = ({ icon: Icon, label, href, isActive }) => (
+const MenuItem = ({ icon: Icon, label, href, isActive }: { icon: React.ElementType; label: string; href: string; isActive: boolean }) => (
   <Link 
     href={href}
     className={`group flex w-full items-center space-x-3 rounded-xl px-4 py-3 transition-all duration-300
@@ -69,13 +69,40 @@ const MenuItem = ({ icon: Icon, label, href, isActive }) => (
   </Link>
 );
 
+interface ClubData {
+  _id: string;
+  displayName: string;
+  images: string[];
+  rating: number;
+  reviews: string[];
+  capacity: number;
+  minAge: number;
+  dressCode: string;
+  genres: string[];
+  tableLayout: any[];
+  longDescription: string;
+  description: string;
+  features: string[];
+  openingHours: any;
+  contactInfo: {
+    phone: string;
+    email: string;
+  };
+  socialMediaLinks: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+  address: string;
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [clubData, setClubData] = useState(null);
+  const [clubData, setClubData] = useState<ClubData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

@@ -17,7 +17,7 @@ interface Review {
   user: User;
   club: string;
   rating: number;
-  date: string;
+  createdAt: string;
   reviewText: string;
 }
 
@@ -168,7 +168,7 @@ const ReviewComponent: React.FC<ReviewProps> = ({ reviews, currentUserId, onRevi
         </VStack>
       </Flex>
       <Divider />
-      {reviewList.map((review) => (
+      {[...reviewList].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((review) => (
         <Box key={review._id}>
           <HStack spacing={4} mb={2}>
             <Avatar name={review.user.username} src={review.user.avatar} />
@@ -185,7 +185,7 @@ const ReviewComponent: React.FC<ReviewProps> = ({ reviews, currentUserId, onRevi
                 ))}
               </HStack>
             </VStack>
-            <Text color="gray.500" ml="auto">{new Date(review.date).toLocaleDateString()}</Text>
+            <Text color="gray.500" ml="auto">{new Date(review.createdAt).toLocaleDateString('pt-BR')}</Text>
             {currentUserId === review.user._id && (
               <HStack>
                 <Button

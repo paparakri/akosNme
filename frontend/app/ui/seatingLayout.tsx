@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image } from 'react-konva';
+import Konva from 'konva';
 import useImage from 'use-image';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,8 +48,8 @@ const LayoutDisplay: React.FC<LayoutDisplayProps> = ({
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [stageSize, setStageSize] = useState({ width: containerWidth, height: containerHeight });
-  const stageRef = useRef(null);
-  const containerRef = useRef(null);
+  const stageRef = useRef<Konva.Stage | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle container size changes
   useEffect(() => {
@@ -85,11 +86,14 @@ const LayoutDisplay: React.FC<LayoutDisplayProps> = ({
     };
   }, [tableList, containerWidth, containerHeight]);
 
-  const handleWheel = (e) => {
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const scaleBy = 1.1;
     const oldScale = scale;
-    const pointer = stageRef.current.getPointerPosition();
+    const pointer = stageRef.current?.getPointerPosition();
+    
+    if (!pointer || !stageRef.current) return;
+    
     const mousePointTo = {
       x: (pointer.x - position.x) / oldScale,
       y: (pointer.y - position.y) / oldScale,

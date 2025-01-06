@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const feedService = require('../controllers/feed.js');
 
 const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
@@ -17,7 +18,7 @@ const EventSchema = new mongoose.Schema({
         required: true
     },
     date: {
-        type: Date,
+        type: String,
         required: true
     },
     startTime: {
@@ -51,7 +52,6 @@ const EventSchema = new mongoose.Schema({
 
 EventSchema.post('save', async function(doc) {
     try {
-      if (this.isNew) {
         await feedService.createEventPost(
           doc.club,
           doc._id,
@@ -59,7 +59,6 @@ EventSchema.post('save', async function(doc) {
           doc.date,
           doc.description
         );
-      }
     } catch (error) {
       console.error('Error creating feed post for event:', error);
     }
